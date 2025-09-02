@@ -1,0 +1,29 @@
+# Ensure consistent LF line endings across environments
+* text=auto eol=lf
+
+# Treat these as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+
+# Locking for large files
+*.lock merge=lock
+
+# Handle frontend files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Handle backend files
+*.env text eol=lf
+*.sh text eol=lf
