@@ -43,7 +43,7 @@ const Sidebar = () => {
                   alt="FlowBite Logo"
                 />
                 <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">
-                  Flowbite
+                  Property Management
                 </span>
               </a>
             </div>
@@ -89,7 +89,7 @@ const Sidebar = () => {
                         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white"
                         role="menuitem"
                       >
-                        Dashboard
+                        Login
                       </Link>
                     </li>
                     <li>

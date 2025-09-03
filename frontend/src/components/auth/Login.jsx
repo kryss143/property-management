@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { initFlowbite } from "flowbite";
+import { Link } from "react-router-dom";
 
 const Login = () => {
   useEffect(() => {
@@ -19,7 +20,7 @@ const Login = () => {
               src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/logo.svg"
               alt="logo"
             />
-            Flowbite
+            Property Management
           </a>
           <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
             <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
@@ -94,12 +95,12 @@ const Login = () => {
                 </button>
                 <p class="text-sm font-light text-gray-500 dark:text-gray-400">
                   Don’t have an account yet?{" "}
-                  <a
-                    href="#"
+                  <Link
+                    to="/register"
                     class="font-medium text-primary-600 hover:underline dark:text-primary-500"
                   >
                     Sign up
-                  </a>
+                  </Link>
                 </p>
               </form>
             </div>
