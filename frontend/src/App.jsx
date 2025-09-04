@@ -9,6 +9,7 @@ import Staffhouses from "./pages/Staffhouses.jsx";
 import Apartments from "./pages/Apartments.jsx";
 import BoardingHouses from "./pages/BoardingHouses.jsx";
 import Inventory from "./pages/Inventory.jsx";
+import PMCalendar from "./pages/PMCalendar.jsx";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/apartments" element={<Apartments />} />
           <Route path="/boardinghouses" element={<BoardingHouses />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/pmcalendar" element={<PMCalendar />} />
         </Routes>
       </BrowserRouter>
     </>

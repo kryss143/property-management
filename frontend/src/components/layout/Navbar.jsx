@@ -42,7 +42,7 @@ const Navbar = () => {
                   class="h-8 me-3"
                   alt="FlowBite Logo"
                 />
-                <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">
+                <span class="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white text-gray-900">
                   Property Management
                 </span>
               </a>
@@ -131,3 +131,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+
