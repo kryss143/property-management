@@ -51,6 +51,7 @@ const PMCalendarStats = () => {
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: "100%", width: "100%", fontSize: "20px" }}
+                className={"dark:text-white text-black"}
               />
             </div>
           </div>
