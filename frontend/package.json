@@ -15,13 +15,7 @@
     "date-fns": "^4.1.0",
     "flowbite": "^3.1.2",
     "formik": "^2.4.6",
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     "heroicons": "^2.2.0",
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     "json-server": "^1.0.0-beta.3",
     "jwt-decode": "^4.0.0",
     "moment": "^2.30.1",
