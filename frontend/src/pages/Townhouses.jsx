@@ -1,13 +1,13 @@
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
-import DataStats from "../components/layout/DataStats";
+import TownhousesStats from "../components/layout/TownhousesStats";
 
 const Townhouses = () => {
   return (
     <>
       <Navbar />
       <Sidebar />
-      <DataStats />
+      <TownhousesStats />
     </>
   );
 };

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "apexcharts": "^3.46.0",
     "globalize": "^1.7.0",
     "moment": "^2.30.1",
     "react-big-calendar": "^1.19.4"

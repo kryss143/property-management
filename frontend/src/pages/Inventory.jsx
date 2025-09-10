@@ -1,13 +1,13 @@
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
-import DataStats from "../components/layout/DataStats";
+import InventoryStats from "../components/layout/InventoryStats";
 
 const Inventory = () => {
   return (
     <>
       <Navbar />
       <Sidebar />
-      <DataStats />
+      <InventoryStats />
     </>
   );
 };
