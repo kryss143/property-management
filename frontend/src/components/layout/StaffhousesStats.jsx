@@ -1,21 +1,11 @@
 import { useEffect } from "react";
 import { initFlowbite } from "flowbite";
-import { DataTable } from "simple-datatables";
+import { loadRoomsTable } from "../../api/RoomsTable.js";
 
 const StaffhousesStats = () => {
   useEffect(() => {
     initFlowbite();
-
-    if (
-      document.getElementById("default-table") &&
-      typeof DataTable !== "undefined"
-    ) {
-      let dataTable = new DataTable("#default-table", {
-        searchable: false,
-        perPageSelect: false,
-      });
-      dataTable.init();
-    }
+    loadRoomsTable();
   }, []);
 
   return (
@@ -27,7 +17,7 @@ const StaffhousesStats = () => {
               Staffhouses
             </p>
           </div>
-          <div class="p-4 h-150 rounded-sm bg-gray-50 dark:bg-gray-800">
+          <div class="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
             <table id="default-table" class="border-gray-800 w-full">
               <thead>
                 <tr>

@@ -16,10 +16,7 @@
 }
 
 .rbc-toolbar{
-  margin-bottom: 10px !important;
-  margin-top: 10px !important;
-  margin-left: 10px !important;
-  margin-right: 10px !important;
+  margin-bottom: 15px !important;
 }
 
 .rbc-row.rbc-month-header{
@@ -29,6 +26,10 @@
 .rbc-toolbar-label{
   font-size: 22px !important;
   font-weight: 500 !important;
+}
+
+.rbc-now.rbc-current{
+  color: #000000 !important;
 }
 
 

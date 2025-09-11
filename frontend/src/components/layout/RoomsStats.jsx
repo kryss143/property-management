@@ -17,7 +17,7 @@ const RoomsStats = () => {
               Rooms
             </p>
           </div>
-          <div class="p-4 h-150 rounded-sm bg-gray-50 dark:bg-gray-800">
+          <div class="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
             <table id="default-table" class="border-gray-800 w-full">
               <thead>
                 <tr>
