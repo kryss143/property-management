@@ -17,6 +17,18 @@ const InventoryStats = () => {
               Inventory
             </p>
           </div>
+          <div class="p-4 rounded-sm bg-gray-50 dark:bg-gray-800 mb-3">
+            <p class="text-lg font-normal italic leading-none mb-4 text-gray-900 dark:text-white">
+              Legend:
+            </p>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"></div>
+              <div class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"></div>
+              <div class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"></div>
+              <div class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"></div>
+              <div class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700"></div>
+            </div>
+          </div>
           <div class="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
             <table id="default-table" class="border-gray-800 w-full">
               <thead>
