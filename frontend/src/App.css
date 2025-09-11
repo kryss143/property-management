@@ -2,3 +2,39 @@
   margin: 0 auto;
   padding: 0;
 }
+
+.rbc-header{
+  border-bottom: transparent !important;
+}
+
+.rbc-agenda-time-cell {
+  border-left: 1px solid #ddd !important;
+}
+
+.rbc-allday-cell{
+  height: 0px !important;
+}
+
+.rbc-toolbar{
+  margin-bottom: 10px !important;
+  margin-top: 10px !important;
+  margin-left: 10px !important;
+  margin-right: 10px !important;
+}
+
+.rbc-row.rbc-month-header{
+  border-bottom: 1px solid #ddd !important;
+}
+
+.rbc-toolbar-label{
+  font-size: 22px !important;
+  font-weight: 500 !important;
+}
+
+
+
+
+
+
+
+

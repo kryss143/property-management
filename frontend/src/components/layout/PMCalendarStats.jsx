@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { initFlowbite } from "flowbite";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "../../App.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 
@@ -51,7 +52,7 @@ const PMCalendarStats = () => {
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: "100%", width: "100%", fontSize: "20px" }}
-                className={"dark:text-white text-black"}
+                className={"dark:text-white text-black p-3"}
               />
             </div>
           </div>
