@@ -1,11 +1,11 @@
 import { DataTable } from "simple-datatables";
 
-export function loadRoomsTable() {
+export function loadStaffhousesTable() {
   if (
-    document.getElementById("rooms-default-table") &&
+    document.getElementById("staffhouses-default-table") &&
     typeof DataTable !== "undefined"
   ) {
-    let dataTable = new DataTable("#rooms-default-table", {
+    let dataTable = new DataTable("#staffhouses-default-table", {
       sortable: true, // enable or disable sorting
       locale: "en-US", // set the locale for sorting
       numeric: true, // enable or disable numeric sorting
@@ -20,7 +20,7 @@ export function loadRoomsTable() {
       sensitivity: "base", // set the search sensitivity (base, accent, case, variant)
       searchQuerySeparator: " ",
       labels: {
-        placeholder: "Search Rooms...", // The search input placeholder
+        placeholder: "Search Staffhouses...", // The search input placeholder
         perPage: "entries per page",
         noRows: "No entries found",
         noResults: "No results found",

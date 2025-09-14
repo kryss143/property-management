@@ -235,7 +235,7 @@ const DashboardStats = () => {
                     </div>
                   </h5>
                   <p class="text-gray-900 dark:text-white text-2xl leading-none font-bold">
-                    $5.40
+                    ₱5.40
                   </p>
                 </div>
               </div>

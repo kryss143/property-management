@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { initFlowbite } from "flowbite";
-import { loadRoomsTable } from "../../api/RoomsTable.js";
+import { loadApartmentsTable } from "../../api/ApartmentsTable.js";
 
-const TownhousesStats = () => {
+const ApartmentsStats = () => {
   useEffect(() => {
     initFlowbite();
-    loadRoomsTable();
+    loadApartmentsTable();
   }, []);
 
   return (
@@ -18,7 +18,7 @@ const TownhousesStats = () => {
             </p>
           </div>
           <div class="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
-            <table id="default-table" class="border-gray-800 w-full">
+            <table id="apartments-default-table" class="border-gray-800 w-full">
               <thead>
                 <tr>
                   <th>
@@ -289,4 +289,4 @@ const TownhousesStats = () => {
   );
 };
 
-export default TownhousesStats;
+export default ApartmentsStats;

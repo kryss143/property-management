@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { initFlowbite } from "flowbite";
-import { loadRoomsTable } from "../../api/RoomsTable.js";
+import { loadBoardingHousesTable } from "../../api/BoardingHousesTable.js";
 
 const BoardingHousesStats = () => {
   useEffect(() => {
     initFlowbite();
-    loadRoomsTable();
+    loadBoardingHousesTable();
   }, []);
 
   return (
@@ -18,7 +18,7 @@ const BoardingHousesStats = () => {
             </p>
           </div>
           <div class="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
-            <table id="default-table" class="border-gray-800 w-full">
+            <table id="bh-default-table" class="border-gray-800 w-full">
               <thead>
                 <tr>
                   <th>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { initFlowbite } from "flowbite";
-import { loadRoomsTable } from "../../api/RoomsTable.js";
+import { loadInventoryTable } from "../../api/InventoryTable.js";
 
 const InventoryStats = () => {
   // State for controlling accordion behavior
@@ -61,7 +61,7 @@ const InventoryStats = () => {
 
   useEffect(() => {
     initFlowbite();
-    loadRoomsTable();
+    loadInventoryTable();
   }, []);
 
   return (
@@ -421,7 +421,7 @@ const InventoryStats = () => {
             
           </div>
           <div className="p-4 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
-            <table id="default-table" className="border-gray-800 w-full">
+            <table id="inventory-default-table" className="border-gray-800 w-full">
               <thead>
                 <tr>
                   <th>
