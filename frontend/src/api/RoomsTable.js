@@ -24,7 +24,7 @@ export function loadRoomsTable() {
         perPage: "entries per page",
         noRows: "No entries found",
         noResults: "No results found",
-      },
+      }, 
     });
     dataTable.init();
   }
