@@ -21,13 +21,13 @@ const RoomsStats = () => {
           </div>
           <div class="p-3 h-full rounded-sm bg-gray-50 dark:bg-gray-800">
             <div class="flex items-center justify-end mb-3">
-              <Link to="/add-apartment">
+              <Link to="/add-room">
                 <button class="flex items-center justify-center gap-1 text-white bg-blue-700 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-md px-4 py-2.5 mr-2 mb-3 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-700">
                   <FaPlus />
                   Add Room
                 </button>
               </Link>
-              <Link to="/edit-apartment/:id">
+              <Link to="/edit-room/:id">
                 <button class="flex items-center justify-center gap-1 text-white bg-yellow-400 hover:bg-yellow-400 focus:ring-4 focus:ring-yellow-400 font-medium rounded-lg text-md px-4 py-2.5 mr-2 mb-3 dark:bg-yellow-400 dark:hover:bg-yellow-300 focus:outline-none dark:focus:ring-yellow-400">
                   <FaEdit />
                   Edit Room
