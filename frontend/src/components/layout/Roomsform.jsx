@@ -5,14 +5,31 @@ const Roomsform = () => {
   useEffect(() => {
     initFlowbite();
 
-    const datepickerEl = document.getElementById('default-datepicker');
+    const datepickerEl = document.getElementById("default-datepicker");
     if (datepickerEl) {
       new Datepicker(datepickerEl, {
-        format: 'mm/dd/yyyy',
+        format: "mm/dd/yyyy",
         autohide: true,
         clearBtn: true,
         todayBtn: true,
         scrollable: true,
+        orientation: "top",
+
+      });
+    }
+
+    const datepickerEndDate = document.getElementById(
+      "default-datepicker-enddate"
+    );
+    if (datepickerEndDate) {
+      new Datepicker(datepickerEndDate, {
+        format: "mm/dd/yyyy",
+        autohide: true,
+        clearBtn: true,
+        todayBtn: true,
+        scrollable: true,
+        orientation: "top",
+        
       });
     }
   }, []);
@@ -186,7 +203,7 @@ const Roomsform = () => {
                       </svg>
                     </div>
                     <input
-                      datepicker
+                      data-datepicker
                       id="default-datepicker"
                       type="text"
                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
@@ -218,7 +235,7 @@ const Roomsform = () => {
                   </label>
 
                   <div class="relative max-w-full">
-                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none ">
                       <svg
                         class="w-4 h-4 text-gray-500 dark:text-gray-400"
                         aria-hidden="true"
@@ -230,8 +247,8 @@ const Roomsform = () => {
                       </svg>
                     </div>
                     <input
-                      datepicker
-                      id="default-datepicker"
+                      data-datepicker
+                      id="default-datepicker-enddate"
                       type="text"
                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="Select end date"
