@@ -5,16 +5,18 @@ const Roomsform = () => {
   useEffect(() => {
     initFlowbite();
 
-    const datepickerEl = document.getElementById("default-datepicker");
-    if (datepickerEl) {
-      new Datepicker(datepickerEl, {
+    const datepickerStartDate = document.getElementById(
+      "default-datepicker-startdate"
+    );
+    if (datepickerStartDate) {
+      new Datepicker(datepickerStartDate, {
         format: "mm/dd/yyyy",
         autohide: true,
         clearBtn: true,
         todayBtn: true,
         scrollable: true,
         orientation: "top",
-
+        
       });
     }
 
@@ -29,7 +31,6 @@ const Roomsform = () => {
         todayBtn: true,
         scrollable: true,
         orientation: "top",
-        
       });
     }
   }, []);
@@ -204,7 +205,7 @@ const Roomsform = () => {
                     </div>
                     <input
                       data-datepicker
-                      id="default-datepicker"
+                      id="default-datepicker-startdate"
                       type="text"
                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="Select start date"
