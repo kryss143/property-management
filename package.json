@@ -1,0 +1,22 @@
+{
+  "name": "property-management",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
+    "build": "npm run build --workspace shared && npm run build --workspace frontend && npm run build --workspace backend",
+    "installalldirectory": "npm install --workspaces --include-workspace-root",
+    "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace backend && npm run typecheck --workspace shared",
+    "lint": "npm run lint --workspace frontend",
+    "start": "npm run start --workspace backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.3"
+  }
+}
