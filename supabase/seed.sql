@@ -1,33 +1,360 @@
-insert into properties (id, name, address, type, description, image_url, status)
-values
-  ('11111111-1111-4111-8111-111111111111', 'Maple Heights', '42 Garden Avenue', 'Apartment', 'Six-story mixed-unit building near the business district.', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80', 'active'),
-  ('22222222-2222-4222-8222-222222222222', 'Harbor Row', '18 Pier Street', 'Townhouse', 'Waterfront rental row with renovated kitchens.', 'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80', 'maintenance')
-on conflict (id) do nothing;
+﻿-- ============================================================
+-- SEED DATA FOR PROPERTY MANAGEMENT APP
+-- ============================================================
 
-insert into units (id, property_id, unit_number, bedrooms, bathrooms, rent_amount, status)
-values
-  ('33333333-3333-4333-8333-333333333333', '11111111-1111-4111-8111-111111111111', '2B', 2, 1, 2100, 'occupied'),
-  ('44444444-4444-4444-8444-444444444444', '11111111-1111-4111-8111-111111111111', '5A', 1, 1, 1750, 'available')
-on conflict (id) do nothing;
+-- Clear existing data (order matters due to foreign keys)
+truncate table maintenance_images restart identity cascade;
+truncate table maintenance_requests restart identity cascade;
+truncate table payments restart identity cascade;
+truncate table leases restart identity cascade;
+truncate table tenants restart identity cascade;
+truncate table units restart identity cascade;
+truncate table properties restart identity cascade;
+truncate table profiles restart identity cascade;
 
-insert into tenants (id, full_name, email, phone, emergency_contact, property_id, unit_id)
-values
-  ('55555555-5555-4555-8555-555555555555', 'Avery Santos', 'avery@example.com', '555-0134', 'Mia Santos, 555-0199', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333333')
-on conflict (id) do nothing;
+-- ============================================================
+-- AUTH USERS (required before profiles)
+-- ============================================================
+insert into auth.users (
+  id, email, encrypted_password, email_confirmed_at,
+  raw_user_meta_data, created_at, updated_at,
+  aud, role
+) values
+  (
+    '00000000-0000-0000-0000-000000000001',
+    'admin@propmanage.com',
+    crypt('Admin1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "System Admin", "role": "admin"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000002',
+    'manager@propmanage.com',
+    crypt('Manager1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "Maria Santos", "role": "manager"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000003',
+    'landlord@propmanage.com',
+    crypt('Landlord1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "Ricardo Dela Cruz", "role": "landlord"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000004',
+    'tenant1@propmanage.com',
+    crypt('Tenant1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "Andrea Reyes", "role": "tenant"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000005',
+    'tenant2@propmanage.com',
+    crypt('Tenant1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "Mark Villanueva", "role": "tenant"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  ),
+  (
+    '00000000-0000-0000-0000-000000000006',
+    'tenant3@propmanage.com',
+    crypt('Tenant1234!', gen_salt('bf')),
+    now(),
+    '{"full_name": "Sophia Lim", "role": "tenant"}'::jsonb,
+    now(), now(), 'authenticated', 'authenticated'
+  );
 
-insert into leases (id, tenant_id, property_id, unit_id, start_date, end_date, rent_amount, deposit_amount, status)
-values
-  ('66666666-6666-4666-8666-666666666666', '55555555-5555-4555-8555-555555555555', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333333', '2026-01-01', '2026-12-31', 2100, 2100, 'active')
-on conflict (id) do nothing;
+-- ============================================================
+-- PROFILES
+-- ============================================================
+insert into profiles (id, full_name, email, phone, role) values
+  ('00000000-0000-0000-0000-000000000001', 'System Admin',      'admin@propmanage.com',    '+63 912 000 0001', 'admin'),
+  ('00000000-0000-0000-0000-000000000002', 'Maria Santos',      'manager@propmanage.com',  '+63 912 000 0002', 'manager'),
+  ('00000000-0000-0000-0000-000000000003', 'Ricardo Dela Cruz', 'landlord@propmanage.com', '+63 912 000 0003', 'landlord'),
+  ('00000000-0000-0000-0000-000000000004', 'Andrea Reyes',      'tenant1@propmanage.com',  '+63 912 000 0004', 'tenant'),
+  ('00000000-0000-0000-0000-000000000005', 'Mark Villanueva',   'tenant2@propmanage.com',  '+63 912 000 0005', 'tenant'),
+  ('00000000-0000-0000-0000-000000000006', 'Sophia Lim',        'tenant3@propmanage.com',  '+63 912 000 0006', 'tenant')
+on conflict (id) do update
+set
+  full_name = excluded.full_name,
+  email = excluded.email,
+  phone = excluded.phone,
+  role = excluded.role;
 
-insert into payments (id, tenant_id, property_id, lease_id, amount_due, amount_paid, due_date, paid_at, status)
-values
-  ('77777777-7777-4777-8777-777777777777', '55555555-5555-4555-8555-555555555555', '11111111-1111-4111-8111-111111111111', '66666666-6666-4666-8666-666666666666', 2100, 2100, '2026-05-01', '2026-05-02', 'paid'),
-  ('88888888-8888-4888-8888-888888888888', '55555555-5555-4555-8555-555555555555', '11111111-1111-4111-8111-111111111111', '66666666-6666-4666-8666-666666666666', 2100, 800, '2026-06-01', null, 'partial')
-on conflict (id) do nothing;
+-- ============================================================
+-- PROPERTIES
+-- ============================================================
+insert into properties (id, name, address, type, description, owner_id, status) values
+  (
+    'a0000000-0000-0000-0000-000000000001',
+    'Sunshine Residences',
+    '123 Macapagal Ave, Pasay City, Metro Manila',
+    'Apartment',
+    'A modern mid-rise residential building with 24/7 security, parking, and amenities.',
+    '00000000-0000-0000-0000-000000000003',
+    'active'
+  ),
+  (
+    'a0000000-0000-0000-0000-000000000002',
+    'Green Valley Townhomes',
+    '456 Aguinaldo Hwy, Cavite City, Cavite',
+    'Townhouse',
+    'A peaceful townhouse complex surrounded by greenery, ideal for families.',
+    '00000000-0000-0000-0000-000000000003',
+    'active'
+  ),
+  (
+    'a0000000-0000-0000-0000-000000000003',
+    'Ortigas Business Suites',
+    '789 Ortigas Ave, Pasig City, Metro Manila',
+    'Commercial',
+    'Premium commercial units perfect for offices and retail businesses.',
+    '00000000-0000-0000-0000-000000000003',
+    'maintenance'
+  );
 
-insert into maintenance_requests (id, title, description, priority, status, property_id, unit_id, tenant_id)
-values
-  ('99999999-9999-4999-8999-999999999999', 'Kitchen sink leak', 'Leak under the sink after the shutoff valve.', 'high', 'open', '11111111-1111-4111-8111-111111111111', '33333333-3333-4333-8333-333333333333', '55555555-5555-4555-8555-555555555555'),
-  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Lobby lighting', 'Replace two fixtures near the mail area.', 'medium', 'in_progress', '22222222-2222-4222-8222-222222222222', null, null)
-on conflict (id) do nothing;
+-- ============================================================
+-- UNITS
+-- ============================================================
+insert into units (id, property_id, unit_number, bedrooms, bathrooms, rent_amount, status) values
+  -- Sunshine Residences units
+  ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', '101', 1, 1,   8000.00, 'occupied'),
+  ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', '102', 2, 1,  12000.00, 'occupied'),
+  ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', '103', 1, 1,   8500.00, 'available'),
+  ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', '201', 3, 2,  18000.00, 'available'),
+  ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', '202', 2, 1,  13000.00, 'maintenance'),
+  -- Green Valley Townhomes units
+  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000002', 'TH-01', 3, 2, 22000.00, 'occupied'),
+  ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', 'TH-02', 3, 2, 22000.00, 'available'),
+  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000002', 'TH-03', 4, 3, 28000.00, 'available'),
+  -- Ortigas Business Suites units
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000003', 'GF-01', 0, 1, 35000.00, 'maintenance'),
+  ('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000003', 'GF-02', 0, 1, 35000.00, 'available');
+
+-- ============================================================
+-- TENANTS
+-- ============================================================
+insert into tenants (id, profile_id, full_name, email, phone, emergency_contact, property_id, unit_id) values
+  (
+    'c0000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000004',
+    'Andrea Reyes',
+    'tenant1@propmanage.com',
+    '+63 912 000 0004',
+    'Juan Reyes - +63 912 111 0004',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'c0000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000005',
+    'Mark Villanueva',
+    'tenant2@propmanage.com',
+    '+63 912 000 0005',
+    'Ana Villanueva - +63 912 111 0005',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000002'
+  ),
+  (
+    'c0000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000006',
+    'Sophia Lim',
+    'tenant3@propmanage.com',
+    '+63 912 000 0006',
+    'Henry Lim - +63 912 111 0006',
+    'a0000000-0000-0000-0000-000000000002',
+    'b0000000-0000-0000-0000-000000000006'
+  );
+
+-- ============================================================
+-- LEASES
+-- ============================================================
+insert into leases (id, tenant_id, property_id, unit_id, start_date, end_date, rent_amount, deposit_amount, status) values
+  (
+    'd0000000-0000-0000-0000-000000000001',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000001',
+    '2025-01-01', '2026-01-01',
+    8000.00, 16000.00,
+    'active'
+  ),
+  (
+    'd0000000-0000-0000-0000-000000000002',
+    'c0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000002',
+    '2025-03-01', '2026-03-01',
+    12000.00, 24000.00,
+    'active'
+  ),
+  (
+    'd0000000-0000-0000-0000-000000000003',
+    'c0000000-0000-0000-0000-000000000003',
+    'a0000000-0000-0000-0000-000000000002',
+    'b0000000-0000-0000-0000-000000000006',
+    '2024-06-01', '2025-06-01',
+    22000.00, 44000.00,
+    'expired'
+  ),
+  (
+    'd0000000-0000-0000-0000-000000000004',
+    'c0000000-0000-0000-0000-000000000003',
+    'a0000000-0000-0000-0000-000000000002',
+    'b0000000-0000-0000-0000-000000000006',
+    '2025-06-01', '2026-06-01',
+    22000.00, 44000.00,
+    'upcoming'
+  );
+
+-- ============================================================
+-- PAYMENTS
+-- ============================================================
+insert into payments (id, tenant_id, property_id, lease_id, amount_due, amount_paid, due_date, paid_at, status) values
+  -- Andrea Reyes payments
+  (
+    'e0000000-0000-0000-0000-000000000001',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000001',
+    8000.00, 8000.00, '2025-01-05', '2025-01-04', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000002',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000001',
+    8000.00, 8000.00, '2025-02-05', '2025-02-03', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000003',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000001',
+    8000.00, 8000.00, '2025-03-05', '2025-03-05', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000004',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000001',
+    8000.00, 5000.00, '2025-04-05', null, 'partial'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000005',
+    'c0000000-0000-0000-0000-000000000001',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000001',
+    8000.00, 0.00, '2025-05-05', null, 'overdue'
+  ),
+  -- Mark Villanueva payments
+  (
+    'e0000000-0000-0000-0000-000000000006',
+    'c0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000002',
+    12000.00, 12000.00, '2025-03-05', '2025-03-04', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000007',
+    'c0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000002',
+    12000.00, 12000.00, '2025-04-05', '2025-04-05', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000008',
+    'c0000000-0000-0000-0000-000000000002',
+    'a0000000-0000-0000-0000-000000000001',
+    'd0000000-0000-0000-0000-000000000002',
+    12000.00, 0.00, '2025-05-05', null, 'pending'
+  ),
+  -- Sophia Lim payments
+  (
+    'e0000000-0000-0000-0000-000000000009',
+    'c0000000-0000-0000-0000-000000000003',
+    'a0000000-0000-0000-0000-000000000002',
+    'd0000000-0000-0000-0000-000000000003',
+    22000.00, 22000.00, '2025-01-05', '2025-01-04', 'paid'
+  ),
+  (
+    'e0000000-0000-0000-0000-000000000010',
+    'c0000000-0000-0000-0000-000000000003',
+    'a0000000-0000-0000-0000-000000000002',
+    'd0000000-0000-0000-0000-000000000003',
+    22000.00, 0.00, '2025-05-05', null, 'overdue'
+  );
+
+-- ============================================================
+-- MAINTENANCE REQUESTS
+-- ============================================================
+insert into maintenance_requests (id, title, description, priority, status, property_id, unit_id, tenant_id) values
+  (
+    'f0000000-0000-0000-0000-000000000001',
+    'Leaking faucet in bathroom',
+    'The bathroom faucet has been dripping water continuously for the past 3 days.',
+    'medium', 'open',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000001',
+    'c0000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'f0000000-0000-0000-0000-000000000002',
+    'Air conditioning not cooling',
+    'The AC unit in the living room is running but not producing cold air.',
+    'high', 'in_progress',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000002',
+    'c0000000-0000-0000-0000-000000000002'
+  ),
+  (
+    'f0000000-0000-0000-0000-000000000003',
+    'Broken window latch',
+    'The window latch in the bedroom is broken and cannot be locked properly.',
+    'low', 'completed',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000001',
+    'c0000000-0000-0000-0000-000000000001'
+  ),
+  (
+    'f0000000-0000-0000-0000-000000000004',
+    'Electrical outlet not working',
+    'Two electrical outlets in the kitchen have stopped working suddenly.',
+    'urgent', 'open',
+    'a0000000-0000-0000-0000-000000000002',
+    'b0000000-0000-0000-0000-000000000006',
+    'c0000000-0000-0000-0000-000000000003'
+  ),
+  (
+    'f0000000-0000-0000-0000-000000000005',
+    'Water heater malfunction',
+    'The water heater is producing lukewarm water instead of hot water.',
+    'medium', 'open',
+    'a0000000-0000-0000-0000-000000000002',
+    'b0000000-0000-0000-0000-000000000006',
+    'c0000000-0000-0000-0000-000000000003'
+  ),
+  (
+    'f0000000-0000-0000-0000-000000000006',
+    'Pest infestation in unit 202',
+    'Cockroaches spotted in the kitchen and bathroom area.',
+    'high', 'cancelled',
+    'a0000000-0000-0000-0000-000000000001',
+    'b0000000-0000-0000-0000-000000000005',
+    null
+  );
+
+-- ============================================================
+-- MAINTENANCE IMAGES
+-- ============================================================
+insert into maintenance_images (request_id, image_url) values
+  ('f0000000-0000-0000-0000-000000000001', 'https://placehold.co/800x600?text=Leaking+Faucet+1'),
+  ('f0000000-0000-0000-0000-000000000001', 'https://placehold.co/800x600?text=Leaking+Faucet+2'),
+  ('f0000000-0000-0000-0000-000000000002', 'https://placehold.co/800x600?text=AC+Unit'),
+  ('f0000000-0000-0000-0000-000000000004', 'https://placehold.co/800x600?text=Electrical+Outlet'),
+  ('f0000000-0000-0000-0000-000000000005', 'https://placehold.co/800x600?text=Water+Heater');

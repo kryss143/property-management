@@ -16,6 +16,23 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api", (_req, res) => {
+  res.json({
+    name: "Property Management API",
+    status: "ok",
+    endpoints: [
+      "/api/profile",
+      "/api/dashboard",
+      "/api/properties",
+      "/api/units",
+      "/api/tenants",
+      "/api/leases",
+      "/api/payments",
+      "/api/maintenance-requests",
+    ],
+  });
+});
+
 app.use("/api/profile", profileRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/properties", crudRouters.properties);

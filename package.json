@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "supabase": "^2.100.0",
     "typescript": "^5.8.3"
   }
 }
