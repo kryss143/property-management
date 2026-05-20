@@ -10,7 +10,12 @@ interface AuthContextValue {
   token?: string;
   isDemo: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (payload: { email: string; password: string; fullName: string; role: Profile["role"] }) => Promise<void>;
+  signUp: (payload: {
+    email: string;
+    password: string;
+    fullName: string;
+    role: Profile["role"];
+  }) => Promise<void>;
   useDemo: () => void;
   signOut: () => Promise<void>;
 }
@@ -23,11 +28,38 @@ const demoProfile: Profile = {
   email: "manager@example.com",
   phone: "555-0110",
   role: "manager",
-  created_at: new Date().toISOString()
+  created_at: new Date().toISOString(),
 };
 
+const SUPABASE_TIMEOUT_MS = 8000;
+
+async function withTimeout<T>(
+  promise: PromiseLike<T>,
+  message: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(message)),
+      SUPABASE_TIMEOUT_MS,
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
 async function loadProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await withTimeout(
+    supabase.from("profiles").select("*").eq("id", userId).single(),
+    "Timed out loading profile",
+  );
   if (error) return null;
   return data as Profile;
 }
@@ -45,18 +77,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
-      setProfile(data.session?.user ? await loadProfile(data.session.user.id) : null);
-      setLoading(false);
-    });
+    let active = true;
 
-    const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      setSession(nextSession);
-      setProfile(nextSession?.user ? await loadProfile(nextSession.user.id) : null);
-    });
+    async function bootstrapAuth() {
+      try {
+        const { data } = await withTimeout(
+          supabase.auth.getSession(),
+          "Timed out loading Supabase session",
+        );
 
-    return () => data.subscription.unsubscribe();
+        if (!active) return;
+
+        setSession(data.session);
+        setProfile(
+          data.session?.user ? await loadProfile(data.session.user.id) : null,
+        );
+      } catch (error) {
+        console.error("[auth] Failed to load Supabase session", error);
+        if (active) {
+          setSession(null);
+          setProfile(null);
+          // Redirect to login on timeout
+          window.location.href = "/login";
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void bootstrapAuth();
+
+    const { data } = supabase.auth.onAuthStateChange(
+      async (_event, nextSession) => {
+        try {
+          setSession(nextSession);
+          setProfile(
+            nextSession?.user ? await loadProfile(nextSession.user.id) : null,
+          );
+        } catch (error) {
+          console.error("[auth] Failed to refresh profile", error);
+          setProfile(null);
+          window.location.href = "/login";
+        }
+      },
+    );
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(
@@ -67,7 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: session?.access_token,
       isDemo,
       async signIn(email, password) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
         setIsDemo(false);
       },
@@ -78,9 +152,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           options: {
             data: {
               full_name: fullName,
-              role
-            }
-          }
+              role,
+            },
+          },
         });
         if (error) throw error;
 
@@ -89,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: data.user.id,
             email,
             full_name: fullName,
-            role
+            role,
           });
         }
         setIsDemo(false);
@@ -106,9 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setProfile(null);
         setIsDemo(false);
-      }
+      },
     }),
-    [isDemo, loading, profile, session]
+    [isDemo, loading, profile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
