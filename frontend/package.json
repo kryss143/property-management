@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": false
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "prebuild": "npm --prefix ../shared run build",
