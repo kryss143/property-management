@@ -1,5 +1,5 @@
 {
-  "name": "@property-management/frontend",
+  "name": "frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,11 +9,11 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "prebuild": "npm --prefix .. run build --workspace @property-management/shared",
+    "prebuild": "npm --prefix .. run build --workspace shared",
     "vercel-debug-build": "npm --prefix .. run vercel-debug-build"
   },
   "dependencies": {
-    "@property-management/shared": "file:../shared",
+    "shared": "file:../shared",
     "@supabase/supabase-js": "^2.49.4",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
