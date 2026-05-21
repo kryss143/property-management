@@ -4,7 +4,7 @@
     "NPM_CONFIG_PRODUCTION": "false"
   },
   "buildCommand": "npm run vercel-debug-build",
-  "outputDirectory": "frontend/dist",
+  "outputDirectory": "dist",
   "installCommand": "npm ci --include=dev --workspaces --include-workspace-root",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
