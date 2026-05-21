@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     visualizer({ filename: "./dist/stats.html", open: false }),
   ],
+  base: "/",
   server: {
     port: 5173,
   },
