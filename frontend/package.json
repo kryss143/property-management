@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
-    "prebuild": "npm --prefix .. run build --workspace shared",
+    "prebuild": "npm --prefix .. run build --workspace @property-management/shared",
     "vercel-debug-build": "npm --prefix .. run vercel-debug-build"
   },
   "dependencies": {
