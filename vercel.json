@@ -8,6 +8,9 @@
     }
   ],
   "routes": [{ "src": "(.*)", "dest": "/frontend/dist/$1" }],
+  "env": {
+    "NPM_CONFIG_PRODUCTION": "false"
+  },
   "installCommand": "npm ci --workspaces --include-workspace-root",
   "buildCommand": "npm run vercel-debug-build",
   "outputDirectory": "frontend/dist"
