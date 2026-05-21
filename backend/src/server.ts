@@ -1,5 +1,7 @@
 import cors from "cors";
 import express from "express";
+import path from "path";
+import fs from "fs";
 import morgan from "morgan";
 import { config } from "./config.js";
 import { crudRouters } from "./routes/crud.js";
@@ -42,8 +44,27 @@ app.use("/api/leases", crudRouters.leases);
 app.use("/api/payments", crudRouters.payments);
 app.use("/api/maintenance-requests", crudRouters.maintenanceRequests);
 
-app.use((_req, res) => {
-  res.status(404).json({ message: "Route not found" });
+// Serve frontend static files if present (SPA)
+let frontendDist = path.resolve(process.cwd(), "frontend", "dist");
+if (!fs.existsSync(frontendDist)) {
+  // fallback to repo-root `dist` (some CI/builds copy frontend there)
+  const fallback = path.resolve(process.cwd(), "dist");
+  if (fs.existsSync(fallback)) frontendDist = fallback;
+}
+app.use(express.static(frontendDist));
+
+app.use((_req, res, next) => {
+  // If the request is for an API route, return 404 JSON
+  // otherwise serve the SPA index.html for client-side routing
+  if (_req.path.startsWith("/api")) {
+    res.status(404).json({ message: "Route not found" });
+    return;
+  }
+
+  const indexHtml = path.join(frontendDist, "index.html");
+  res.sendFile(indexHtml, (err) => {
+    if (err) next(err);
+  });
 });
 
 app.listen(config.port, () => {
