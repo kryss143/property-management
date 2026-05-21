@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "frontend/dist" }
+    }
+  ],
+  "routes": [{ "src": "/(.*)", "dest": "/frontend/dist/$1" }],
+  "installCommand": "npm install --workspaces --include-workspace-root",
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/dist"
+}
