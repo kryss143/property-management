@@ -8,9 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -b --noEmit",
-    "lint": "eslint .",
-    "prebuild": "npm --prefix .. run build --workspace shared",
-    "vercel-debug-build": "npm --prefix .. run vercel-debug-build"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@property-management/shared": "file:../shared",
