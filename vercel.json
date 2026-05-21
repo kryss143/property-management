@@ -3,6 +3,12 @@
   "env": {
     "NPM_CONFIG_PRODUCTION": "false"
   },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/App.tsx"
+    }
+  ],
   "buildCommand": "npm run vercel-debug-build",
   "outputDirectory": "dist",
   "installCommand": "npm ci --include=dev --workspaces --include-workspace-root",
