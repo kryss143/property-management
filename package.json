@@ -10,8 +10,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
     "installalldirectory": "npm install --workspaces --include-workspace-root",
-    "build": "npm --prefix shared run build && npm --prefix frontend run build && npm --prefix backend run build",
-    "vercel-debug-build": "node -v && npm -v && npm run build --workspace @property-management/shared && ls shared/dist && npm run build --workspace @property-management/frontend",
+    "build": "npm --prefix shared run build && npm --prefix frontend run build && npm --prefix backend run build && rm -rf dist || true && cp -r frontend/dist dist",
+    "vercel-debug-build": "node -v && npm -v && npm run build --workspace @property-management/shared && ls shared/dist && npm run build --workspace @property-management/frontend && rm -rf dist || true && cp -r frontend/dist dist && ls -la dist",
     "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace backend && npm run typecheck --workspace shared",
     "lint": "npm run lint --workspace frontend",
     "start": "npm run start --workspace backend"
