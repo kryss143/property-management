@@ -1,16 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "frontend/dist" }
-    }
-  ],
-  "routes": [{ "src": "(.*)", "dest": "/frontend/dist/$1" }],
   "env": {
     "NPM_CONFIG_PRODUCTION": "false"
   },
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "installCommand": "npm ci --workspaces --include-workspace-root",
   "buildCommand": "npm run vercel-debug-build",
   "outputDirectory": "frontend/dist"
