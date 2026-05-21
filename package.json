@@ -8,13 +8,13 @@
     "shared"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace @property-management/frontend\" \"npm run dev --workspace @property-management/backend\"",
-    "build": "npm run build --workspace @property-management/shared && npm run build --workspace @property-management/frontend && npm run build --workspace @property-management/backend",
+    "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
+    "build": "npm run build --workspace shared && npm run build --workspace frontend && npm run build --workspace backend",
     "installalldirectory": "npm install --workspaces --include-workspace-root",
-    "vercel-debug-build": "node -v && npm -v && ./node_modules/.bin/tsc --version && npm run build --workspace @property-management/shared && npm run build --workspace @property-management/frontend",
-    "typecheck": "npm run typecheck --workspace @property-management/frontend && npm run typecheck --workspace @property-management/backend && npm run typecheck --workspace @property-management/shared",
-    "lint": "npm run lint --workspace @property-management/frontend",
-    "start": "npm run start --workspace @property-management/backend"
+    "vercel-debug-build": "node -v && npm -v && ./node_modules/.bin/tsc --version && npm run build --workspace shared && npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace backend && npm run typecheck --workspace shared",
+    "lint": "npm run lint --workspace frontend",
+    "start": "npm run start --workspace backend"
   },
   "dependencies": {
     "typescript": "^5.8.3"
