@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "@property-management/backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "shared": "file:../shared",
+    "@property-management/shared": "file:../shared",
     "@supabase/supabase-js": "^2.49.4",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

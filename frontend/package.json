@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@property-management/frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "vercel-debug-build": "npm --prefix .. run vercel-debug-build"
   },
   "dependencies": {
-    "shared": "file:../shared",
+    "@property-management/shared": "file:../shared",
     "@supabase/supabase-js": "^2.49.4",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
