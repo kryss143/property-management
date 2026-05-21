@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
-    "build": "npm run build --workspace shared && npm run build --workspace frontend && npm run build --workspace backend",
+    "build": "tsc -b shared && npm run build --workspace frontend && npm run build --workspace backend",
     "installalldirectory": "npm install --workspaces --include-workspace-root",
     "vercel-debug-build": "echo '--- ENV ---' && node -v && npm -v && echo '--- list root node_modules .bin ---' && ls -la node_modules/.bin || true && echo '--- running workspace build ---' && npm run build",
     "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace backend && npm run typecheck --workspace shared",
