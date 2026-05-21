@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import type { Profile } from "@property-management/shared";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
@@ -64,11 +65,37 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   return data as Profile;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(!isSupabaseConfigured);
+
+  useEffect(() => {
+    function onAuthExpired() {
+      console.warn("[auth] Session expired (received auth:expired event)");
+      // Clear local state and sign out from Supabase if configured
+      setSession(null);
+      setProfile(null);
+      setIsDemo(false);
+      if (isSupabaseConfigured) {
+        void supabase.auth.signOut().catch(() => {
+          /* ignore */
+        });
+      }
+      // Navigate to login (centralized handling)
+      navigate("/login", { replace: true });
+    }
+
+    window.addEventListener("auth:expired", onAuthExpired as EventListener);
+    return () => {
+      window.removeEventListener(
+        "auth:expired",
+        onAuthExpired as EventListener,
+      );
+    };
+  }, [isSupabaseConfigured, navigate]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -98,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(null);
           setProfile(null);
           // Redirect to login on timeout
-          window.location.href = "/login";
+          navigate("/login", { replace: true });
         }
       } finally {
         if (active) {
@@ -119,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error("[auth] Failed to refresh profile", error);
           setProfile(null);
-          window.location.href = "/login";
+          navigate("/login", { replace: true });
         }
       },
     );
@@ -186,12 +213,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
   return context;
-}
+};

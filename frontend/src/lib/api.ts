@@ -3,6 +3,15 @@ import { demoDashboard, demoResources } from "../data/demo";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
+export class AuthError extends Error {
+  status: number;
+  constructor(message?: string) {
+    super(message ?? "Session expired");
+    this.name = "AuthError";
+    this.status = 401;
+  }
+}
+
 export interface ListResponse<T> {
   data: T[];
   count: number;
@@ -25,8 +34,12 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    window.location.href = "/login";
-    throw new Error("Session expired");
+    try {
+      window.dispatchEvent(new CustomEvent("auth:expired"));
+    } catch (e) {
+      // ignore
+    }
+    throw new AuthError();
   }
 
   if (!response.ok) {
