@@ -11,7 +11,6 @@
     "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
     "installalldirectory": "npm install --workspaces --include-workspace-root",
     "build": "npm --prefix shared run build && npm --prefix frontend run build && npm --prefix backend run build && npm run copy-frontend-dist",
-    "copy-frontend-dist": "node scripts/copy-frontend-dist.mjs",
     "vercel-debug-build": "node -v && npm -v && npm run build --workspace @property-management/shared && npm run build --workspace @property-management/frontend && npm run copy-frontend-dist",
     "typecheck": "npm run typecheck --workspace frontend && npm run typecheck --workspace backend && npm run typecheck --workspace shared",
     "lint": "npm run lint --workspace frontend",
