@@ -1,11 +1,28 @@
 import { config as dotenvConfig } from "dotenv";
-import { resolve } from "path";
+import { existsSync } from "fs";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 
 // Load environment variables from .env file
 const env = process.env.NODE_ENV || "development";
 const envFile = env === "production" ? ".env.production" : ".env.local";
 
-dotenvConfig({ path: resolve(process.cwd(), envFile) });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const backendRoot = resolve(__dirname, "..");
+
+const envPaths = [
+  resolve(backendRoot, envFile),
+  resolve(process.cwd(), envFile),
+  resolve(backendRoot, ".env"),
+  resolve(process.cwd(), ".env"),
+];
+
+for (const path of [...new Set(envPaths)]) {
+  if (existsSync(path)) {
+    dotenvConfig({ path });
+  }
+}
 
 const required = [
   "SUPABASE_URL",
