@@ -2,9 +2,9 @@ import { Router } from "express";
 import type {
   DashboardPayload,
   MaintenanceStatus,
-} from "@property-management/shared";
-import { requireAuth } from "../middleware/auth.js";
-import { supabaseAdmin } from "../supabase.js";
+} from "@property-management/shared/src/index.ts";
+import { requireAuth } from "../middleware/auth.ts";
+import { supabaseAdmin } from "../supabase.ts";
 
 export const dashboardRouter = Router();
 
