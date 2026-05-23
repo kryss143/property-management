@@ -3,29 +3,35 @@ import { Navigate } from "react-router-dom";
 import { Building2, Loader2 } from "lucide-react";
 import { useAuth } from "../providers/AuthProvider";
 
+type SignupRole = "" | "manager" | "landlord" | "tenant";
+
 export function LoginPage() {
   const { profile, signIn, signUp, useDemo } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("manager@example.com");
   const [password, setPassword] = useState("password123");
   const [fullName, setFullName] = useState("Jordan Manager");
-  const [role, setRole] = useState<
-    "choose role" | "manager" | "landlord" | "tenant"
-  >("choose role");
+  const [role, setRole] = useState<SignupRole>("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const showDemoLogin = import.meta.env.DEV;
 
   if (profile) return <Navigate to="/" replace />;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    setBusy(true);
     setError("");
+
+    setBusy(true);
 
     try {
       if (mode === "login") {
         await signIn(email, password);
       } else {
+        if (!role) {
+          setError("Choose a role to create an account.");
+          return;
+        }
         await signUp({ email, password, fullName, role });
       }
     } catch (err) {
@@ -90,7 +96,7 @@ export function LoginPage() {
             </button>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             {mode === "signup" ? (
               <>
                 <label className="block text-sm font-medium text-gray-700">
@@ -98,7 +104,7 @@ export function LoginPage() {
                   <input
                     className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
                     onChange={(event) => setFullName(event.target.value)}
-                    required
+                    placeholder="Enter full name"
                   />
                 </label>
                 <label className="block text-sm font-medium text-gray-700">
@@ -107,18 +113,14 @@ export function LoginPage() {
                     className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
                     value={role}
                     onChange={(event) =>
-                      setRole(event.target.value as typeof role)
+                      setRole(event.target.value as SignupRole)
                     }
                   >
-                    <option
-                      value="choose role"
-                      className="text-gray-300"
-                      disabled
-                    >
-                      Choose Role
+                    <option value="" disabled>
+                      Choose role
                     </option>
                     <option value="manager">Property Manager</option>
-                    <option value="landlord">Landlord / Owner</option>
+                    <option value="landlord">Owner</option>
                     <option value="tenant">Tenant</option>
                   </select>
                 </label>
@@ -130,8 +132,8 @@ export function LoginPage() {
               <input
                 className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
                 type="email"
+                placeholder="Enter email"
                 onChange={(event) => setEmail(event.target.value)}
-                required
               />
             </label>
             <label className="block text-sm font-medium text-gray-700">
@@ -139,8 +141,8 @@ export function LoginPage() {
               <input
                 className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
                 type="password"
+                placeholder="Enter password"
                 onChange={(event) => setPassword(event.target.value)}
-                required
               />
             </label>
 
@@ -159,12 +161,30 @@ export function LoginPage() {
             </button>
           </form>
 
-          <button
-            className="focus-ring mt-3 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
-            onClick={useDemo}
-          >
-            Continue with demo data
-          </button>
+          {showDemoLogin ? (
+            <button
+              className="focus-ring mt-3 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
+              onClick={useDemo}
+            >
+              Continue with demo data
+            </button>
+          ) : null}
+
+          <p className="mt-4 text-center text-sm text-gray-600">
+            {mode === "login"
+              ? "Don't have an account?"
+              : "Already have an account?"}{" "}
+            <button
+              className="text-sm font-semibold text-emerald-700 underline-offset-4 hover:underline"
+              type="button"
+              onClick={() => {
+                setError("");
+                setMode(mode === "login" ? "signup" : "login");
+              }}
+            >
+              {mode === "login" ? "Register" : "Login"}
+            </button>
+          </p>
         </section>
       </div>
     </div>

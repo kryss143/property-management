@@ -1,9 +1,4 @@
-export type UserRole =
-  | "admin"
-  | "manager"
-  | "landlord"
-  | "tenant"
-  | "choose role";
+export type UserRole = "admin" | "manager" | "landlord" | "tenant";
 
 export type PropertyStatus = "active" | "inactive" | "maintenance";
 export type UnitStatus = "available" | "occupied" | "maintenance";
