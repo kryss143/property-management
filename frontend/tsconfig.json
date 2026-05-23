@@ -12,7 +12,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@property-management/shared": ["../shared/dist", "../shared/src"]
+      "@property-management/shared": ["../shared/src", "../shared/dist"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,
