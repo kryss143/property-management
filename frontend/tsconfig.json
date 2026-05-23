@@ -14,6 +14,7 @@
     "paths": {
       "@property-management/shared": ["../shared/dist", "../shared/src"]
     },
+    "types": ["vite/client"],
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
