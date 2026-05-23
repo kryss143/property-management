@@ -1,10 +1,19 @@
-export type UserRole = "admin" | "manager" | "landlord" | "tenant";
+export type UserRole =
+  | "admin"
+  | "manager"
+  | "landlord"
+  | "tenant"
+  | "choose role";
 
 export type PropertyStatus = "active" | "inactive" | "maintenance";
 export type UnitStatus = "available" | "occupied" | "maintenance";
 export type LeaseStatus = "active" | "expired" | "upcoming";
 export type PaymentStatus = "paid" | "pending" | "overdue" | "partial";
-export type MaintenanceStatus = "open" | "in_progress" | "completed" | "cancelled";
+export type MaintenanceStatus =
+  | "open"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
 export type MaintenancePriority = "low" | "medium" | "high" | "urgent";
 
 export interface Profile {
@@ -105,5 +114,10 @@ export interface DashboardPayload {
   revenue: Array<{ month: string; collected: number; unpaid: number }>;
   occupancy: Array<{ label: string; value: number }>;
   maintenance: Array<{ status: MaintenanceStatus; count: number }>;
-  recentActivity: Array<{ id: string; label: string; timestamp: string; type: string }>;
+  recentActivity: Array<{
+    id: string;
+    label: string;
+    timestamp: string;
+    type: string;
+  }>;
 }

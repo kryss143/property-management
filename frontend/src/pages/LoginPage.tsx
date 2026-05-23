@@ -9,7 +9,9 @@ export function LoginPage() {
   const [email, setEmail] = useState("manager@example.com");
   const [password, setPassword] = useState("password123");
   const [fullName, setFullName] = useState("Jordan Manager");
-  const [role, setRole] = useState<"manager" | "landlord" | "tenant">("manager");
+  const [role, setRole] = useState<
+    "choose role" | "manager" | "landlord" | "tenant"
+  >("choose role");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -43,16 +45,29 @@ export function LoginPage() {
             </div>
             <div>
               <p className="text-lg font-semibold">KeyNest</p>
-              <p className="text-sm text-emerald-50">Property Management System</p>
+              <p className="text-sm text-emerald-50">
+                Property Management System
+              </p>
             </div>
           </div>
-          <h1 className="max-w-md text-3xl font-semibold leading-tight sm:text-4xl">Manage properties, tenants, leases, and rent from one workspace.</h1>
+          <h1 className="max-w-md text-3xl font-semibold leading-tight sm:text-4xl">
+            Manage properties, tenants, leases, and rent from one workspace.
+          </h1>
           <p className="mt-4 max-w-md text-sm leading-6 text-emerald-50">
-            Built mobile-first for managers in the field and clear enough for owners and tenants to use every day.
+            Built mobile-first for managers in the field and clear enough for
+            owners and tenants to use every day.
           </p>
           <div className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
-            {["Role-aware access", "Rent tracking", "Maintenance workflows", "Owner-ready reports"].map((item) => (
-              <div key={item} className="rounded-lg bg-white/12 px-3 py-3 font-medium">
+            {[
+              "Role-aware access",
+              "Rent tracking",
+              "Maintenance workflows",
+              "Owner-ready reports",
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-lg bg-white/12 px-3 py-3 font-medium"
+              >
                 {item}
               </div>
             ))}
@@ -80,11 +95,28 @@ export function LoginPage() {
               <>
                 <label className="block text-sm font-medium text-gray-700">
                   Full name
-                  <input className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5" value={fullName} onChange={(event) => setFullName(event.target.value)} required />
+                  <input
+                    className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    onChange={(event) => setFullName(event.target.value)}
+                    required
+                  />
                 </label>
                 <label className="block text-sm font-medium text-gray-700">
                   Role
-                  <select className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
+                  <select
+                    className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                    value={role}
+                    onChange={(event) =>
+                      setRole(event.target.value as typeof role)
+                    }
+                  >
+                    <option
+                      value="choose role"
+                      className="text-gray-300"
+                      disabled
+                    >
+                      Choose Role
+                    </option>
                     <option value="manager">Property Manager</option>
                     <option value="landlord">Landlord / Owner</option>
                     <option value="tenant">Tenant</option>
@@ -95,22 +127,42 @@ export function LoginPage() {
 
             <label className="block text-sm font-medium text-gray-700">
               Email
-              <input className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <input
+                className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                type="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
             </label>
             <label className="block text-sm font-medium text-gray-700">
               Password
-              <input className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <input
+                className="focus-ring mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5"
+                type="password"
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
             </label>
 
-            {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
+            {error ? (
+              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {error}
+              </p>
+            ) : null}
 
-            <button className="focus-ring flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white" disabled={busy}>
+            <button
+              className="focus-ring flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white"
+              disabled={busy}
+            >
               {busy ? <Loader2 className="animate-spin" size={18} /> : null}
               {mode === "login" ? "Login" : "Create account"}
             </button>
           </form>
 
-          <button className="focus-ring mt-3 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700" onClick={useDemo}>
+          <button
+            className="focus-ring mt-3 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
+            onClick={useDemo}
+          >
             Continue with demo data
           </button>
         </section>
