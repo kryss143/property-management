@@ -7,7 +7,14 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noImplicitAny": false, // ← add
+    "declaration": true, // ← add
+    "paths": {
+      "@property-management/shared": ["../shared/dist/index.js"],
+      "@property-management/shared/*": ["../shared/dist/*"]
+    } // ← add
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../shared" }] // ← add
 }
