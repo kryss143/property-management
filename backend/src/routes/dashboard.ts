@@ -2,7 +2,7 @@ import { Router } from "express";
 import type {
   DashboardPayload,
   MaintenanceStatus,
-} from "@property-management/shared/src/index.js";
+} from "@property-management/shared";
 import { requireAuth } from "../middleware/auth.js";
 import { supabaseAdmin } from "../supabase.js";
 
