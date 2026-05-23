@@ -5,7 +5,11 @@ import { supabaseAdmin } from "../supabase.js";
 export const profileRouter = Router();
 
 profileRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
-  const { data, error } = await supabaseAdmin.from("profiles").select("*").eq("id", req.user?.id).single();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("*")
+    .eq("id", req.user?.id)
+    .single();
 
   if (error) {
     return res.status(404).json({ message: error.message });

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { supabaseAdmin } from "../supabase.ts";
-import { requireAuth, requireRole } from "../middleware/auth.ts";
+import { supabaseAdmin } from "../supabase.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 
 type TableName =
   | "properties"
