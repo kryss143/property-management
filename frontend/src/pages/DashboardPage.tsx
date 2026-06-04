@@ -45,6 +45,14 @@ import {
   Wrench,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useAuth } from "../providers/AuthProvider";
+import type { Profile } from "@property-management/shared";
+
+// Role routing:
+//   admin    → ManagerDashboard  (full operational view, same as manager)
+//   manager  → ManagerDashboard  (day-to-day: tenants, leases, maintenance, payments)
+//   landlord → OwnerDashboard    (portfolio: revenue, occupancy, ROI)
+//   tenant   → TenantDashboard   (unit-level: rent, lease, maintenance)
 
 type SortDirection = "asc" | "desc";
 
@@ -334,26 +342,19 @@ function formatDate(date: Date) {
 
 function useCountUp(target: number, duration = 850) {
   const [value, setValue] = useState(0);
-
   useEffect(() => {
     let frame = 0;
     let start: number | null = null;
-
     const animate = (timestamp: number) => {
       start ??= timestamp;
       const progress = Math.min((timestamp - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(target * eased));
-
-      if (progress < 1) {
-        frame = requestAnimationFrame(animate);
-      }
+      if (progress < 1) frame = requestAnimationFrame(animate);
     };
-
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, [duration, target]);
-
   return value;
 }
 
@@ -407,7 +408,6 @@ function StatCard({
   chart?: React.ReactNode;
 }) {
   const isUp = trend >= 0;
-
   return (
     <article className="dashboard-card group rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(15,23,42,0.10)]">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -461,7 +461,7 @@ function DashboardTopBar({
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
           KeyNest Prime
         </p>
-        <h2 className="mt-1 font-serif text-3xl font-semibold text-slate-950 md:text-4xl">
+        <h2 className="mt-1 text-3xl font-bold text-slate-950 md:text-4xl">
           {title}
         </h2>
         <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
@@ -562,7 +562,6 @@ function SortButton({
 function PaymentTable() {
   const [sortKey, setSortKey] = useState<keyof PaymentRow>("month");
   const [direction, setDirection] = useState<SortDirection>("desc");
-
   const sortedRows = useMemo(() => {
     return [...paymentHistory].sort((a, b) => {
       const aValue = a[sortKey];
@@ -574,17 +573,15 @@ function PaymentTable() {
       return direction === "asc" ? result : -result;
     });
   }, [direction, sortKey]);
-
   const setSort = (key: keyof PaymentRow) => {
     setDirection(sortKey === key && direction === "asc" ? "desc" : "asc");
     setSortKey(key);
   };
-
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <div className="flex items-center justify-between border-b border-slate-200 p-4">
         <div>
-          <h3 className="font-serif text-xl font-semibold text-slate-950">
+          <h3 className="text-xl font-semibold text-slate-950">
             Payment History
           </h3>
           <p className="text-sm text-slate-500">
@@ -655,31 +652,27 @@ function TenantRosterTable() {
   const [filter, setFilter] = useState("All");
   const [sortKey, setSortKey] = useState<keyof TenantRow>("leaseEnd");
   const [direction, setDirection] = useState<SortDirection>("asc");
-
   const rows = useMemo(() => {
     const filtered =
       filter === "All"
         ? tenantRoster
         : tenantRoster.filter(
-            (tenant) =>
-              tenant.paymentStatus === filter || tenant.property === filter,
+            (t) => t.paymentStatus === filter || t.property === filter,
           );
     return [...filtered].sort((a, b) => {
       const result = String(a[sortKey]).localeCompare(String(b[sortKey]));
       return direction === "asc" ? result : -result;
     });
   }, [direction, filter, sortKey]);
-
   const setSort = (key: keyof TenantRow) => {
     setDirection(sortKey === key && direction === "asc" ? "desc" : "asc");
     setSortKey(key);
   };
-
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="font-serif text-xl font-semibold text-slate-950">
+          <h3 className="text-xl font-semibold text-slate-950">
             Tenant Roster
           </h3>
           <p className="text-sm text-slate-500">
@@ -691,15 +684,15 @@ function TenantRosterTable() {
             <span className="sr-only">Filter tenant roster</span>
             <select
               value={filter}
-              onChange={(event) => setFilter(event.target.value)}
+              onChange={(e) => setFilter(e.target.value)}
               className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-9 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               <option>All</option>
               <option>Current</option>
               <option>Pending</option>
               <option>Overdue</option>
-              {properties.map((property) => (
-                <option key={property.name}>{property.name}</option>
+              {properties.map((p) => (
+                <option key={p.name}>{p.name}</option>
               ))}
             </select>
             <SlidersHorizontal
@@ -799,12 +792,11 @@ function TenantRosterTable() {
 function MaintenancePanel() {
   const [showForm, setShowForm] = useState(false);
   const steps = ["Submitted", "In Review", "Scheduled", "Resolved"];
-
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-serif text-xl font-semibold text-slate-950">
+          <h3 className="text-xl font-semibold text-slate-950">
             Maintenance Requests
           </h3>
           <p className="text-sm text-slate-500">
@@ -812,7 +804,7 @@ function MaintenancePanel() {
           </p>
         </div>
         <button
-          onClick={() => setShowForm((value) => !value)}
+          onClick={() => setShowForm((v) => !v)}
           className="inline-flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
           aria-expanded={showForm}
         >
@@ -820,8 +812,7 @@ function MaintenancePanel() {
           Submit New Request
         </button>
       </div>
-
-      {showForm ? (
+      {showForm && (
         <form className="mb-4 grid gap-3 rounded-lg bg-slate-50 p-4 md:grid-cols-[1fr_160px_140px_auto]">
           <label>
             <span className="sr-only">Issue title</span>
@@ -850,34 +841,31 @@ function MaintenancePanel() {
             Send
           </button>
         </form>
-      ) : null}
-
+      )}
       <div className="space-y-3">
         {maintenanceRequests.length ? (
-          maintenanceRequests.map((request) => (
+          maintenanceRequests.map((req) => (
             <article
-              key={request.title}
+              key={req.title}
               className="rounded-lg border border-slate-100 bg-slate-50 p-4 transition hover:border-amber-200 hover:bg-amber-50/40"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h4 className="font-semibold text-slate-950">
-                    {request.title}
-                  </h4>
+                  <h4 className="font-semibold text-slate-950">{req.title}</h4>
                   <p className="mt-1 text-sm text-slate-500">
-                    {request.category} - submitted {request.submitted} -{" "}
-                    {request.priority} priority
+                    {req.category} - submitted {req.submitted} - {req.priority}{" "}
+                    priority
                   </p>
                 </div>
-                <StatusBadge value={request.status} />
+                <StatusBadge value={req.status} />
               </div>
               <div className="mt-4 grid grid-cols-4 gap-2">
-                {steps.map((step, index) => (
+                {steps.map((step, i) => (
                   <div key={step} className="min-w-0">
                     <div
                       className={clsx(
                         "h-1.5 rounded-full",
-                        index <= request.step ? "bg-amber-500" : "bg-slate-200",
+                        i <= req.step ? "bg-amber-500" : "bg-slate-200",
                       )}
                     />
                     <p className="mt-2 truncate text-xs font-medium text-slate-500">
@@ -899,26 +887,52 @@ function MaintenancePanel() {
   );
 }
 
+function MiniDonut({ value }: { value: number }) {
+  const data = [
+    { label: "Occupied", value },
+    { label: "Vacant", value: 100 - value },
+  ];
+  return (
+    <div className="h-10 w-10" aria-hidden="true">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            innerRadius={13}
+            outerRadius={19}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <Cell fill="#0f766e" />
+            <Cell fill="#e2e8f0" />
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ─── Tenant Dashboard ────────────────────────────────────────────────────────
 export function TenantDashboard() {
   const today = new Date();
-
+  const { profile } = useAuth();
   return (
     <div className="space-y-5">
       <DashboardTopBar
-        title="Tenant Dashboard"
-        subtitle="React + Tailwind CSS with Recharts, tuned for renter workflows."
+        title="My Dashboard"
+        subtitle="Your rent, lease, and maintenance at a glance."
         action="Pay Rent"
         badgeCount={3}
       />
-
       <section className="dashboard-card overflow-hidden rounded-lg border border-slate-200 bg-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
         <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:p-6">
           <div>
             <p className="text-sm font-medium text-amber-300">
               {formatDate(today)}
             </p>
-            <h3 className="mt-2 font-serif text-3xl font-semibold md:text-4xl">
-              Good morning, Maya Santiago
+            <h3 className="mt-2 text-3xl font-semibold md:text-4xl">
+              Good morning, {profile?.full_name}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
               Unit 3B at Aurelia Heights, 18 Valero Street. Your lease renewal
@@ -935,21 +949,15 @@ export function TenantDashboard() {
           </div>
         </div>
       </section>
-
       <AlertBanner
         tone="amber"
         title="Lease renewal notice"
         detail="Your landlord requested renewal confirmation by June 20, 2026."
       />
-
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Next Rent Due"
-          value={
-            <>
-              <AnimatedValue value={4200} prefix="$" />
-            </>
-          }
+          value={<AnimatedValue value={4200} prefix="$" />}
           detail="Due Jun 05 - 1 day left"
           trend={0}
           icon={CreditCard}
@@ -957,11 +965,7 @@ export function TenantDashboard() {
         />
         <StatCard
           label="Last Payment"
-          value={
-            <>
-              <AnimatedValue value={4200} prefix="$" />
-            </>
-          }
+          value={<AnimatedValue value={4200} prefix="$" />}
           detail="Paid May 03"
           trend={2.1}
           icon={CheckCircle2}
@@ -984,13 +988,12 @@ export function TenantDashboard() {
           tone="text-violet-700"
         />
       </section>
-
       <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <PaymentTable />
         <div className="space-y-5">
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-serif text-xl font-semibold text-slate-950">
+              <h3 className="text-xl font-semibold text-slate-950">
                 Lease Summary
               </h3>
               <button className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
@@ -1015,9 +1018,8 @@ export function TenantDashboard() {
               ))}
             </div>
           </section>
-
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-            <h3 className="font-serif text-xl font-semibold text-slate-950">
+            <h3 className="text-xl font-semibold text-slate-950">
               Notices & Announcements
             </h3>
             <div className="mt-4 space-y-3">
@@ -1046,47 +1048,34 @@ export function TenantDashboard() {
           </section>
         </div>
       </section>
-
       <MaintenancePanel />
     </div>
   );
 }
 
+// ─── Owner/Landlord Dashboard ─────────────────────────────────────────────────
 export function OwnerDashboard() {
-  const totalUnits = properties.reduce(
-    (sum, property) => sum + property.units,
-    0,
-  );
-  const occupiedUnits = properties.reduce(
-    (sum, property) => sum + property.occupied,
-    0,
-  );
-  const monthlyIncome = properties.reduce(
-    (sum, property) => sum + property.income,
-    0,
-  );
+  const { profile } = useAuth();
+  const totalUnits = properties.reduce((sum, p) => sum + p.units, 0);
+  const occupiedUnits = properties.reduce((sum, p) => sum + p.occupied, 0);
+  const monthlyIncome = properties.reduce((sum, p) => sum + p.income, 0);
   const occupancyRate = Math.round((occupiedUnits / totalUnits) * 100);
-  const expenseTotal = expenseSummary.reduce(
-    (sum, expense) => sum + expense.value,
-    0,
-  );
-
+  const expenseTotal = expenseSummary.reduce((sum, e) => sum + e.value, 0);
   return (
     <div className="space-y-5">
       <DashboardTopBar
-        title="Owner Dashboard"
-        subtitle="Portfolio intelligence for income, occupancy, tenant health, and maintenance."
+        title="Portfolio Dashboard"
+        subtitle="Revenue, occupancy, and property performance across your portfolio."
         action="Add Property"
         badgeCount={7}
       />
-
       <section className="dashboard-card rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
         <div className="grid gap-4 lg:grid-cols-[1fr_1.3fr]">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber-700">
               Portfolio Overview
             </p>
-            <h3 className="mt-2 font-serif text-3xl font-semibold text-slate-950">
+            <h3 className="mt-2 text-3xl font-semibold text-slate-950">
               Three premium assets, one operating picture.
             </h3>
           </div>
@@ -1127,13 +1116,11 @@ export function OwnerDashboard() {
           </div>
         </div>
       </section>
-
       <AlertBanner
         tone="rose"
         title="Action items need review"
         detail="2 tenants are more than 5 days overdue and one maintenance ticket is older than 7 days."
       />
-
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Monthly Revenue"
@@ -1169,12 +1156,11 @@ export function OwnerDashboard() {
           tone="text-amber-700"
         />
       </section>
-
       <section className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-serif text-xl font-semibold text-slate-950">
+              <h3 className="text-xl font-semibold text-slate-950">
                 Revenue Performance
               </h3>
               <p className="text-sm text-slate-500">
@@ -1184,7 +1170,6 @@ export function OwnerDashboard() {
             <div
               className="inline-flex rounded-lg bg-slate-100 p-1"
               role="group"
-              aria-label="Revenue chart mode"
             >
               <button className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-slate-950 shadow-sm">
                 Aggregated
@@ -1204,9 +1189,9 @@ export function OwnerDashboard() {
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `$${Number(value) / 1000}k`}
+                  tickFormatter={(v) => `$${Number(v) / 1000}k`}
                 />
-                <Tooltip formatter={(value) => money(Number(value))} />
+                <Tooltip formatter={(v) => money(Number(v))} />
                 <Area
                   dataKey="revenue"
                   stroke="#0f172a"
@@ -1224,20 +1209,19 @@ export function OwnerDashboard() {
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {revenueData
-              .filter((month) => month.note)
-              .map((month) => (
+              .filter((m) => m.note)
+              .map((m) => (
                 <span
-                  key={month.month}
+                  key={m.month}
                   className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
                 >
-                  {month.month}: {month.note}
+                  {m.month}: {m.note}
                 </span>
               ))}
           </div>
         </section>
-
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
-          <h3 className="font-serif text-xl font-semibold text-slate-950">
+          <h3 className="text-xl font-semibold text-slate-950">
             Maintenance & Expenses
           </h3>
           <div className="mt-4 space-y-3">
@@ -1270,7 +1254,7 @@ export function OwnerDashboard() {
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis hide />
-                <Tooltip formatter={(value) => money(Number(value))} />
+                <Tooltip formatter={(v) => money(Number(v))} />
                 <Bar dataKey="value" fill="#d97706" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -1283,7 +1267,6 @@ export function OwnerDashboard() {
           </div>
         </section>
       </section>
-
       <section className="grid gap-4 lg:grid-cols-3">
         {properties.map((property) => (
           <article
@@ -1298,7 +1281,7 @@ export function OwnerDashboard() {
             <div className="p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-serif text-xl font-semibold text-slate-950">
+                  <h3 className="text-xl font-semibold text-slate-950">
                     {property.name}
                   </h3>
                   <p className="text-sm text-slate-500">{property.address}</p>
@@ -1331,9 +1314,7 @@ export function OwnerDashboard() {
           </article>
         ))}
       </section>
-
       <TenantRosterTable />
-
       <section className="grid gap-4 lg:grid-cols-3">
         {[
           [
@@ -1360,61 +1341,49 @@ export function OwnerDashboard() {
               <Icon size={19} />
             </div>
             <h3 className="font-semibold text-slate-950">
-              {title?.toString() || "Untitled"}
+              {title?.toString()}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              {detail?.toString() || "No details available"}
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{detail?.toString()}</p>
           </article>
         ))}
       </section>
-
-      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <h3 className="font-serif text-xl font-semibold text-slate-950">
-          Property Detail Sub-Page Structure
-        </h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Recommended drill-down: overview metrics, unit stack, tenant ledger,
-          maintenance timeline, document vault, income/expense ledger, and audit
-          activity.
-        </p>
-      </section>
     </div>
   );
 }
 
-function MiniDonut({ value }: { value: number }) {
-  const data = [
-    { label: "Occupied", value },
-    { label: "Vacant", value: 100 - value },
-  ];
-
-  return (
-    <div className="h-10 w-10" aria-hidden="true">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            innerRadius={13}
-            outerRadius={19}
-            startAngle={90}
-            endAngle={-270}
-          >
-            <Cell fill="#0f766e" />
-            <Cell fill="#e2e8f0" />
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
+// ─── Manager Dashboard ────────────────────────────────────────────────────────
+// Manager sees everything the owner sees, plus the full tenant roster
+// and operational controls. For now it reuses OwnerDashboard as the base.
+export function ManagerDashboard() {
+  return <OwnerDashboard />;
 }
 
+// ─── Main DashboardPage (role router) ────────────────────────────────────────
 export function DashboardPage() {
-  const [view, setView] = useState<"tenant" | "owner">("tenant");
+  const { profile } = useAuth();
+  const role = profile?.role;
 
+  const wrapper = (children: React.ReactNode) => (
+    <div className="min-h-screen text-slate-900">
+      <div className="mx-auto max-w-[1600px]">{children}</div>
+    </div>
+  );
+
+  // tenant — unit-level view only
+  if (role === "tenant") return wrapper(<TenantDashboard />);
+
+  // landlord — portfolio/revenue view, read-heavy
+  if (role === "landlord") return wrapper(<OwnerDashboard />);
+
+  // manager — operational view (full control)
+  if (role === "manager") return wrapper(<ManagerDashboard />);
+
+  // admin — same operational view as manager + system access via /admin route
+  if (role === "admin") return wrapper(<ManagerDashboard />);
+
+  // demo / unknown role — manual switcher
   return (
-    <div className="min-h-screen bg-[#f7f5f0] text-slate-900">
+    <div className="min-h-screen text-slate-900">
       <div className="mx-auto max-w-[1600px] space-y-5">
         <div className="sticky top-[73px] z-10 rounded-lg border border-slate-200 bg-white/90 p-2 shadow-sm backdrop-blur md:top-[81px]">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -1429,37 +1398,52 @@ export function DashboardPage() {
                 </p>
               </div>
             </div>
-            <div
-              className="grid grid-cols-2 rounded-lg bg-slate-100 p-1"
-              role="tablist"
-              aria-label="Dashboard view"
-            >
-              {[
-                ["tenant", UserRound, "Tenant"],
-                ["owner", ShieldCheck, "Owner"],
-              ].map(([key, Icon, label]) => (
-                <button
-                  key={key as string}
-                  role="tab"
-                  aria-selected={view === key}
-                  onClick={() => setView(key as "tenant" | "owner")}
-                  className={clsx(
-                    "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500",
-                    view === key
-                      ? "bg-white text-slate-950 shadow-sm"
-                      : "text-slate-500 hover:text-slate-950",
-                  )}
-                >
-                  <Icon size={17} />
-                  {label?.toString() || "Untitled"}
-                </button>
-              ))}
-            </div>
+            <DemoContent />
           </div>
         </div>
-
-        {view === "tenant" ? <TenantDashboard /> : <OwnerDashboard />}
       </div>
+    </div>
+  );
+}
+
+function DemoContent() {
+  const [view, setView] = useState<"tenant" | "landlord" | "manager">("tenant");
+  return (
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <div
+          className="grid grid-cols-3 rounded-lg bg-slate-100 p-1"
+          role="tablist"
+          aria-label="Dashboard view"
+        >
+          {(
+            [
+              ["tenant", UserRound, "Tenant"],
+              ["landlord", ShieldCheck, "Landlord"],
+              ["manager", UsersRound, "Manager"],
+            ] as const
+          ).map(([key, Icon, label]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={view === key}
+              onClick={() => setView(key)}
+              className={clsx(
+                "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500",
+                view === key
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-500 hover:text-slate-950",
+              )}
+            >
+              <Icon size={17} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {view === "tenant" && <TenantDashboard />}
+      {view === "landlord" && <OwnerDashboard />}
+      {view === "manager" && <ManagerDashboard />}
     </div>
   );
 }

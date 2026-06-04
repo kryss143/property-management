@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Building2, Loader2 } from "lucide-react";
 import { useAuth } from "../providers/AuthProvider";
 
-type SignupRole = "" | "manager" | "landlord" | "tenant";
+type SignupRole = "" | "tenant" | "manager" | "landlord";
 
 export function LoginPage() {
   const { profile, signIn, signUp, useDemo } = useAuth();
