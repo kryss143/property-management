@@ -70,12 +70,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(!isSupabaseConfigured);
+  // FIX 1: always start as false — demo mode must be explicitly chosen from the login page
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     function onAuthExpired() {
       console.warn("[auth] Session expired (received auth:expired event)");
-      // Clear local state and sign out from Supabase if configured
       setSession(null);
       setProfile(null);
       setIsDemo(false);
@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           /* ignore */
         });
       }
-      // Navigate to login (centralized handling)
       navigate("/login", { replace: true });
     }
 
@@ -99,7 +98,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      setProfile(demoProfile);
+      // FIX 2: don't auto-login as demo — just stop loading so ProtectedApp
+      // redirects to /login where the user can choose "Use demo" themselves
       setLoading(false);
       return;
     }
@@ -124,7 +124,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (active) {
           setSession(null);
           setProfile(null);
-          // Redirect to login on timeout
           navigate("/login", { replace: true });
         }
       } finally {

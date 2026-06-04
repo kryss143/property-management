@@ -7,6 +7,7 @@ import {
   KeyRound,
   LogOut,
   Menu,
+  ShieldCheck,
   UserRound,
   UsersRound,
   Wrench
@@ -16,7 +17,9 @@ import { clsx } from "clsx";
 import { useAuth } from "../../providers/AuthProvider";
 
 const navItems = [
-  { label: "Dashboard", path: "/", icon: Home },
+  { label: "Manager", path: "/", icon: Home },
+  { label: "Tenant", path: "/dashboard/tenant", icon: UserRound },
+  { label: "Owner", path: "/dashboard/owner", icon: ShieldCheck },
   { label: "Properties", path: "/properties", icon: Building2 },
   { label: "Units", path: "/units", icon: KeyRound },
   { label: "Tenants", path: "/tenants", icon: UsersRound },

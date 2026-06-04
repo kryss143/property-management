@@ -27,4 +27,26 @@ textarea {
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2;
   }
+
+  .dashboard-card {
+    animation: dashboard-card-enter 560ms ease both;
+  }
+}
+
+@keyframes dashboard-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card {
+    animation: none;
+  }
 }
