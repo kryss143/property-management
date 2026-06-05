@@ -5,6 +5,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ManagerDashboardPage } from "./pages/ManagerDashboardPage";
 import { OwnerDashboardPage } from "./pages/OwnerDashboardPage";
 import { TenantDashboardPage } from "./pages/TenantDashboardPage";
+import { AdminDashboardPage } from "./pages/AdminDashboard";
 import { ResourcePage } from "./pages/ResourcePage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { ProfilePage } from "./pages/ProfilePage";
@@ -28,17 +29,24 @@ function ProtectedApp() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<ManagerDashboardPage />} />
+        <Route path="/" element={<DashboardPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/manager" element={<ManagerDashboardPage />} />
         <Route path="/dashboard/tenant" element={<TenantDashboardPage />} />
         <Route path="/dashboard/owner" element={<OwnerDashboardPage />} />
-        <Route path="/properties" element={<ResourcePage type="properties" />} />
+        <Route path="/dashboard/admin" element={<AdminDashboardPage />} />
+        <Route
+          path="/properties"
+          element={<ResourcePage type="properties" />}
+        />
         <Route path="/units" element={<ResourcePage type="units" />} />
         <Route path="/tenants" element={<ResourcePage type="tenants" />} />
         <Route path="/leases" element={<ResourcePage type="leases" />} />
         <Route path="/payments" element={<ResourcePage type="payments" />} />
-        <Route path="/maintenance" element={<ResourcePage type="maintenance-requests" />} />
+        <Route
+          path="/maintenance"
+          element={<ResourcePage type="maintenance-requests" />}
+        />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>

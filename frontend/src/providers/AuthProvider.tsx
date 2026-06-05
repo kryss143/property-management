@@ -28,7 +28,7 @@ const demoProfile: Profile = {
   full_name: "Jordan Manager",
   email: "manager@example.com",
   phone: "555-0110",
-  role: "manager",
+  role: "admin",
   created_at: new Date().toISOString(),
 };
 
