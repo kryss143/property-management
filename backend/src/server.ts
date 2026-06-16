@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import type { ErrorRequestHandler } from "express";
 import morgan from "morgan";
 import { config } from "./config.js";
 import { crudRouters } from "./routes/crud.js";
@@ -45,6 +46,59 @@ app.use("/api/maintenance-requests", crudRouters.maintenanceRequests);
 app.use((_req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
+
+// Supabase errors carry a `status` and `code` alongside a `message`.
+// This interface covers both the PostgREST shape and the Auth shape.
+interface SupabaseError {
+  message: string;
+  status?: number; // PostgREST / Auth HTTP status
+  code?: string; // e.g. "PGRST116", "invalid_credentials"
+  details?: string; // PostgREST detail string
+  hint?: string; // PostgREST hint string
+}
+
+function isSupabaseError(err: unknown): err is SupabaseError {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "message" in err &&
+    // At least one Supabase-specific field must be present
+    ("code" in err ||
+      "details" in err ||
+      "hint" in err ||
+      ("status" in err &&
+        typeof (err as Record<string, unknown>).status === "number"))
+  );
+}
+
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error("[error]", err);
+
+  if (isSupabaseError(err)) {
+    const status =
+      typeof err.status === "number" && err.status >= 100 && err.status < 600
+        ? err.status
+        : 500;
+
+    res.status(status).json({
+      error: {
+        message: err.message,
+        ...(err.code && { code: err.code }),
+        ...(err.details && { details: err.details }),
+        ...(err.hint && { hint: err.hint }),
+      },
+    });
+    return;
+  }
+
+  // Generic fallback for non-Supabase errors
+  const message =
+    err instanceof Error ? err.message : "An unexpected error occurred";
+
+  res.status(500).json({ error: { message } });
+};
+
+app.use(errorHandler);
 
 app.listen(config.port, () => {
   console.log(`API listening on http://localhost:${config.port}`);

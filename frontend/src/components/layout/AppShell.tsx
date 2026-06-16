@@ -1,5 +1,3 @@
-//AppShell.tsx
-
 import {
   BarChart3,
   Building2,
@@ -9,30 +7,20 @@ import {
   KeyRound,
   LogOut,
   Menu,
-  Settings,
-  ShieldCheck,
   UserRound,
   UsersRound,
   Wrench,
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { clsx } from "clsx";
 import { useAuth } from "../../providers/AuthProvider";
 import type { Profile } from "@property-management/shared";
 
-// Role definitions:
-//   admin    — platform operator, full access + user management
-//   manager  — property manager (hired), handles day-to-day operations
-//   landlord — property owner, read-heavy portfolio view
-//   tenant   — renter, sees only their own unit data
+// ─── Nav items ────────────────────────────────────────────────────────────────
+// Dashboard path is role-specific so each role lands on their own page.
+// The path is derived at render time from the profile role.
 
-const allNavItems = [
-  {
-    label: "Dashboard",
-    path: "/dashboard",
-    icon: Home,
-    roles: ["admin", "manager", "landlord", "tenant"],
-  },
+const staticNavItems = [
   {
     label: "Properties",
     path: "/properties",
@@ -75,13 +63,23 @@ const allNavItems = [
     icon: BarChart3,
     roles: ["admin", "manager", "landlord"],
   },
-  {
-    label: "Admin",
-    path: "/admin",
-    icon: Settings,
-    roles: ["admin"],
-  },
 ];
+
+// Maps each role to their dashboard route
+const roleDashboardPath: Record<string, string> = {
+  admin: "/dashboard/admin",
+  manager: "/dashboard/manager",
+  landlord: "/dashboard/owner",
+  tenant: "/dashboard/tenant",
+};
+
+// Maps each role to the header title shown on their dashboard
+const roleDashboardTitle: Record<string, string> = {
+  admin: "Admin Control Centre",
+  manager: "Operations Dashboard",
+  landlord: "Portfolio Overview",
+  tenant: "My Home",
+};
 
 const roleBadgeColor: Record<string, string> = {
   admin: "bg-rose-100 text-rose-700",
@@ -90,22 +88,61 @@ const roleBadgeColor: Record<string, string> = {
   tenant: "bg-emerald-100 text-emerald-700",
 };
 
+// Page titles for non-dashboard routes
+const pathTitles: Record<string, string> = {
+  "/properties": "Properties",
+  "/units": "Units",
+  "/tenants": "Tenants",
+  "/leases": "Leases",
+  "/payments": "Payments",
+  "/maintenance": "Maintenance",
+  "/reports": "Reports",
+  "/profile": "Profile",
+};
+
 function getNavItems(role: Profile["role"] | undefined) {
-  if (!role) return allNavItems; // demo: show all
-  return allNavItems.filter((item) => item.roles.includes(role));
+  if (!role) return staticNavItems;
+  return staticNavItems.filter((item) => item.roles.includes(role));
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+// ─── AppShell ─────────────────────────────────────────────────────────────────
+
+export function AppShell() {
   const { profile, signOut, isDemo } = useAuth();
   const location = useLocation();
+
+  const dashboardPath = profile?.role
+    ? (roleDashboardPath[profile.role] ?? "/dashboard")
+    : "/dashboard";
+
   const navItems = getNavItems(profile?.role);
-  const title =
-    navItems.find((item) => item.path === location.pathname)?.label ??
-    "Dashboard";
+
+  // Build the full nav list with a role-aware Dashboard entry at the top
+  const allNavItems = [
+    {
+      label: "Dashboard",
+      path: dashboardPath,
+      icon: Home,
+      roles: ["admin", "manager", "landlord", "tenant"],
+    },
+    ...navItems,
+  ];
+
+  // Derive the header title from the current path
+  const title = (() => {
+    const isDashboardPath = Object.values(roleDashboardPath).includes(
+      location.pathname,
+    );
+    if (isDashboardPath && profile?.role) {
+      return roleDashboardTitle[profile.role] ?? "Dashboard";
+    }
+    return pathTitles[location.pathname] ?? "Dashboard";
+  })();
 
   return (
     <div className="min-h-screen bg-[#f6f7fb] pb-24 text-gray-900 md:flex md:pb-0">
-      <aside className="hidden w-72 shrink-0 border-r border-gray-200 bg-white px-4 py-5 md:flex md:flex-col">
+      {/* ── Sidebar ── */}
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white px-4 py-5 md:flex">
         <div className="mb-7 flex items-center gap-3 px-2">
           <div className="grid h-11 w-11 place-items-center rounded-lg bg-emerald-600 text-white">
             <Building2 size={22} />
@@ -117,12 +154,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavItem key={item.path} {...item} />
           ))}
         </nav>
 
-        {/* Role badge at bottom of sidebar */}
         {profile?.role && (
           <div className="mt-6 px-2">
             <span
@@ -137,6 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </aside>
 
+      {/* ── Main ── */}
       <main className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 px-4 py-3 backdrop-blur md:px-8">
           <div className="flex items-center justify-between gap-3">
@@ -150,11 +187,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2">
-              {isDemo ? (
+              {isDemo && (
                 <span className="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 sm:inline">
                   Demo data
                 </span>
-              ) : null}
+              )}
               <NavLink
                 to="/profile"
                 className="focus-ring flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium shadow-sm"
@@ -180,12 +217,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="px-4 py-5 md:px-8 md:py-8">{children}</div>
+        <div className="px-4 py-5 md:px-8 md:py-8">
+          <Outlet />
+        </div>
       </main>
 
+      {/* ── Mobile bottom nav ── */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white px-2 pb-3 pt-2 shadow-soft md:hidden">
         <div className="grid grid-cols-4 gap-1">
-          {navItems.slice(0, 8).map((item) => {
+          {allNavItems.slice(0, 8).map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -211,7 +251,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavItem({ label, path, icon: Icon }: (typeof allNavItems)[number]) {
+// ─── NavItem ──────────────────────────────────────────────────────────────────
+
+function NavItem({ label, path, icon: Icon }: (typeof staticNavItems)[number]) {
   return (
     <NavLink
       to={path}

@@ -25,12 +25,25 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const demoProfile: Profile = {
   id: "demo-user",
-  full_name: "Jordan Manager",
-  email: "manager@example.com",
+  full_name: "Alex Admin",
+  email: "admin@example.com",
   phone: "555-0110",
   role: "admin",
   created_at: new Date().toISOString(),
 };
+
+const roleDashboardPath: Record<Profile["role"], string> = {
+  admin: "/dashboard/admin",
+  manager: "/dashboard/manager",
+  tenant: "/dashboard/tenant",
+  landlord: "/dashboard/owner",
+};
+function profileSetupError(): Error {
+  return Object.assign(
+    new Error("Your account isn't set up yet. Contact your administrator."),
+    { status: 403 },
+  );
+}
 
 const SUPABASE_TIMEOUT_MS = 8000;
 
@@ -57,11 +70,25 @@ async function withTimeout<T>(
 }
 
 async function loadProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await withTimeout(
-    supabase.from("profiles").select("*").eq("id", userId).single(),
-    "Timed out loading profile",
-  );
-  if (error) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  // console.log("Profile data:", data);
+  // console.log("Profile error:", error);
+
+  if (error) {
+    console.error("[profile] load error:", error);
+    return null;
+  }
+
+  if (!data) {
+    console.warn("[profile] not found for user:", userId);
+    return null;
+  }
+
   return data as Profile;
 }
 
@@ -84,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           /* ignore */
         });
       }
-      navigate("/login", { replace: true });
+      navigate("/", { replace: true });
     }
 
     window.addEventListener("auth:expired", onAuthExpired as EventListener);
@@ -113,6 +140,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           "Timed out loading Supabase session",
         );
 
+        // const { data, error } = await supabase.auth.getSession();
+
+        // console.log("session", data);
+        // console.log("session error", error);
+
         if (!active) return;
 
         setSession(data.session);
@@ -139,9 +171,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (_event, nextSession) => {
         try {
           setSession(nextSession);
-          setProfile(
-            nextSession?.user ? await loadProfile(nextSession.user.id) : null,
-          );
+
+          if (_event === "SIGNED_OUT" || !nextSession) {
+            setProfile(null);
+            setIsDemo(false);
+            return;
+          }
+
+          if (_event === "SIGNED_IN" || _event === "INITIAL_SESSION") {
+            if (nextSession.user) {
+              const nextProfile = await loadProfile(nextSession.user.id);
+              setProfile(nextProfile);
+            }
+          }
         } catch (error) {
           console.error("[auth] Failed to refresh profile", error);
           setProfile(null);
@@ -164,23 +206,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       token: session?.access_token,
       isDemo,
       async signIn(email, password) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+
         if (error) throw error;
+
         setIsDemo(false);
+
+        const nextProfile = data.user ? await loadProfile(data.user.id) : null;
+
+        if (!nextProfile) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setProfile(null);
+          throw profileSetupError();
+        }
+
+        setProfile(nextProfile);
+        navigate(roleDashboardPath[nextProfile.role] ?? "/dashboard", {
+          replace: true,
+        });
       },
+
       async signUp({ email, password, fullName, role }) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: {
-              full_name: fullName,
-              role,
-            },
-          },
+          options: { data: { full_name: fullName, role } },
         });
         if (error) throw error;
 
@@ -192,7 +246,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             role,
           });
         }
+
         setIsDemo(false);
+
+        if (!data.session) {
+          throw Object.assign(
+            new Error(
+              "Account created. Please check your email to confirm before signing in.",
+            ),
+            { status: 422 },
+          );
+        }
+
+        const nextProfile = data.user ? await loadProfile(data.user.id) : null;
+        setProfile(nextProfile);
+        navigate(roleDashboardPath[role] ?? "/dashboard", { replace: true });
       },
       useDemo() {
         setProfile(demoProfile);
@@ -206,9 +274,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(null);
         setProfile(null);
         setIsDemo(false);
+
+        navigate("/", { replace: true });
       },
     }),
-    [isDemo, loading, profile, session],
+    [isDemo, loading, navigate, profile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
