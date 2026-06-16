@@ -301,7 +301,7 @@ export function LoginPage() {
                     Role
                     <select
                       className={inputClass("role")}
-                      // value={role}
+                      value={role}
                       onChange={(e) => {
                         setRole(e.target.value as SignupRole);
                         clearField("role");
