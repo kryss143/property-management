@@ -250,12 +250,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsDemo(false);
 
         if (!data.session) {
-          throw Object.assign(
-            new Error(
-              "Account created. Please check your email to confirm before signing in.",
-            ),
-            { status: 422 },
-          );
+          return;
         }
 
         const nextProfile = data.user ? await loadProfile(data.user.id) : null;
