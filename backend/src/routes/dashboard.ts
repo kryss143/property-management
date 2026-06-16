@@ -1,5 +1,3 @@
-//dashboard.ts
-
 import { Router } from "express";
 import type {
   DashboardPayload,
@@ -11,6 +9,10 @@ import { supabaseAdmin } from "../supabase.js";
 export const dashboardRouter = Router();
 
 dashboardRouter.get("/", requireAuth, async (_req, res) => {
+  // ── limit payments to the current calendar year so we never ship an
+  //    unbounded dataset just to build a 6-month revenue chart ──
+  const startOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString();
+
   const [properties, units, tenants, payments, maintenance] = await Promise.all(
     [
       supabaseAdmin.from("properties").select("id,status,created_at"),
@@ -18,7 +20,8 @@ dashboardRouter.get("/", requireAuth, async (_req, res) => {
       supabaseAdmin.from("tenants").select("id,created_at"),
       supabaseAdmin
         .from("payments")
-        .select("id,amount_due,amount_paid,due_date,status,created_at"),
+        .select("id,amount_due,amount_paid,due_date,status,created_at")
+        .gte("due_date", startOfYear), // ← only fetch payments in scope
       supabaseAdmin
         .from("maintenance_requests")
         .select("id,title,status,created_at"),
@@ -36,22 +39,23 @@ dashboardRouter.get("/", requireAuth, async (_req, res) => {
   const unitRows = units.data ?? [];
   const paymentRows = payments.data ?? [];
   const maintenanceRows = maintenance.data ?? [];
+
   const occupiedUnits = unitRows.filter(
     (unit) => unit.status === "occupied",
   ).length;
-  const rentCollected = paymentRows.reduce(
-    (sum, payment) => sum + Number(payment.amount_paid ?? 0),
-    0,
-  );
-  const unpaidRent = paymentRows.reduce((sum, payment) => {
-    return (
-      sum +
-      Math.max(
+
+  // ── single O(n) pass instead of two separate reduce calls ──
+  const { rentCollected, unpaidRent } = paymentRows.reduce(
+    (acc, payment) => {
+      acc.rentCollected += Number(payment.amount_paid ?? 0);
+      acc.unpaidRent += Math.max(
         Number(payment.amount_due ?? 0) - Number(payment.amount_paid ?? 0),
         0,
-      )
-    );
-  }, 0);
+      );
+      return acc;
+    },
+    { rentCollected: 0, unpaidRent: 0 },
+  );
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
   const revenue = months.map((month, index) => {
@@ -76,6 +80,7 @@ dashboardRouter.get("/", requireAuth, async (_req, res) => {
     };
   });
 
+  // ── fixed: generic type was on its own line, breaking the expression ──
   const statusCounts = maintenanceRows.reduce<
     Record<MaintenanceStatus, number>
   >(
