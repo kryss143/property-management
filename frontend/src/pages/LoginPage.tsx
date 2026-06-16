@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { AlertCircle, Building2, Loader2 } from "lucide-react";
+import { AlertCircle, Building2, Loader2, MailCheck } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "../providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -122,6 +122,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("manager@example.com");
   const [password, setPassword] = useState("password123");
   const [fullName, setFullName] = useState("Jordan Manager");
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const [role, setRole] = useState<SignupRole>("");
 
   const [serverError, setServerError] = useState<{
@@ -198,6 +199,7 @@ export function LoginPage() {
           fullName,
           role: role as Exclude<SignupRole, "">,
         });
+        setSignupSuccess(true);
       }
     } catch (err) {
       setServerError(friendlyError(err));
@@ -275,7 +277,6 @@ export function LoginPage() {
               Sign up
             </button>
           </div>
-
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             {mode === "signup" && (
               <>
@@ -375,7 +376,20 @@ export function LoginPage() {
               {mode === "login" ? "Login" : "Create account"}
             </button>
           </form>
-
+          // 3. Render below the form closing tag
+          {signupSuccess && (
+            <div className="mt-4 flex gap-2.5 rounded-lg bg-emerald-50 px-3 py-3 text-emerald-800">
+              <MailCheck className="mt-0.5 shrink-0" size={16} />
+              <div className="text-sm">
+                <p className="font-medium">Check your inbox</p>
+                <p className="mt-0.5 text-emerald-700/80">
+                  We sent a verification link to{" "}
+                  <span className="font-medium">{email}</span>. Click it to
+                  activate your account before signing in.
+                </p>
+              </div>
+            </div>
+          )}
           {showDemoLogin && (
             <button
               className="focus-ring mt-3 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
@@ -386,7 +400,6 @@ export function LoginPage() {
               Continue with demo data
             </button>
           )}
-
           <p className="mt-4 text-center text-sm text-gray-600">
             {mode === "login"
               ? "Don't have an account?"

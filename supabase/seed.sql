@@ -2,6 +2,9 @@
 -- SEED DATA FOR PROPERTY MANAGEMENT APP
 -- ============================================================
 
+-- pgcrypto lives in the extensions schema on Supabase; qualify crypt/gen_salt
+create extension if not exists pgcrypto with schema extensions;
+
 -- Clear existing data (order matters due to foreign keys)
 truncate table maintenance_images restart identity cascade;
 truncate table maintenance_requests restart identity cascade;
@@ -12,61 +15,234 @@ truncate table units restart identity cascade;
 truncate table properties restart identity cascade;
 truncate table profiles restart identity cascade;
 
+-- Remove seed auth users so re-runs do not conflict
+delete from auth.identities
+where user_id in (
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000004',
+  '00000000-0000-0000-0000-000000000005',
+  '00000000-0000-0000-0000-000000000006'
+);
+
+delete from auth.users
+where id in (
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000004',
+  '00000000-0000-0000-0000-000000000005',
+  '00000000-0000-0000-0000-000000000006'
+);
+
 -- ============================================================
 -- AUTH USERS (required before profiles)
 -- ============================================================
 insert into auth.users (
-  id, email, encrypted_password, email_confirmed_at,
-  raw_user_meta_data, created_at, updated_at,
-  aud, role
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  recovery_sent_at,
+  last_sign_in_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token
+) values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000001',
+    'authenticated',
+    'authenticated',
+    'admin@propmanage.com',
+    extensions.crypt('Admin1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "System Admin", "role": "admin"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000002',
+    'authenticated',
+    'authenticated',
+    'manager@propmanage.com',
+    extensions.crypt('Manager1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "Maria Santos", "role": "manager"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000003',
+    'authenticated',
+    'authenticated',
+    'landlord@propmanage.com',
+    extensions.crypt('Landlord1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "Ricardo Dela Cruz", "role": "landlord"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000004',
+    'authenticated',
+    'authenticated',
+    'tenant1@propmanage.com',
+    extensions.crypt('Tenant1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "Andrea Reyes", "role": "tenant"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000005',
+    'authenticated',
+    'authenticated',
+    'tenant2@propmanage.com',
+    extensions.crypt('Tenant1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "Mark Villanueva", "role": "tenant"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '00000000-0000-0000-0000-000000000006',
+    'authenticated',
+    'authenticated',
+    'tenant3@propmanage.com',
+    extensions.crypt('Tenant1234!', extensions.gen_salt('bf')),
+    now(),
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name": "Sophia Lim", "role": "tenant"}'::jsonb,
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  );
+
+-- Email identities required for sign-in on current Supabase Auth
+insert into auth.identities (
+  id,
+  user_id,
+  provider_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at
 ) values
   (
     '00000000-0000-0000-0000-000000000001',
-    'admin@propmanage.com',
-    crypt('Admin1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
+    '{"sub":"00000000-0000-0000-0000-000000000001","email":"admin@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "System Admin", "role": "admin"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   ),
   (
     '00000000-0000-0000-0000-000000000002',
-    'manager@propmanage.com',
-    crypt('Manager1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000002',
+    '{"sub":"00000000-0000-0000-0000-000000000002","email":"manager@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "Maria Santos", "role": "manager"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   ),
   (
     '00000000-0000-0000-0000-000000000003',
-    'landlord@propmanage.com',
-    crypt('Landlord1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000003',
+    '{"sub":"00000000-0000-0000-0000-000000000003","email":"landlord@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "Ricardo Dela Cruz", "role": "landlord"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   ),
   (
     '00000000-0000-0000-0000-000000000004',
-    'tenant1@propmanage.com',
-    crypt('Tenant1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000004',
+    '{"sub":"00000000-0000-0000-0000-000000000004","email":"tenant1@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "Andrea Reyes", "role": "tenant"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   ),
   (
     '00000000-0000-0000-0000-000000000005',
-    'tenant2@propmanage.com',
-    crypt('Tenant1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000005',
+    '{"sub":"00000000-0000-0000-0000-000000000005","email":"tenant2@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "Mark Villanueva", "role": "tenant"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   ),
   (
     '00000000-0000-0000-0000-000000000006',
-    'tenant3@propmanage.com',
-    crypt('Tenant1234!', gen_salt('bf')),
+    '00000000-0000-0000-0000-000000000006',
+    '00000000-0000-0000-0000-000000000006',
+    '{"sub":"00000000-0000-0000-0000-000000000006","email":"tenant3@propmanage.com"}'::jsonb,
+    'email',
     now(),
-    '{"full_name": "Sophia Lim", "role": "tenant"}'::jsonb,
-    now(), now(), 'authenticated', 'authenticated'
+    now(),
+    now()
   );
 
 -- ============================================================

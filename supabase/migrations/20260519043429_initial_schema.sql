@@ -2,7 +2,7 @@
 -- EXTENSIONS & TYPES (unchanged)
 -- ============================================================
 
-create extension if not exists "pgcrypto";
+create extension if not exists pgcrypto with schema extensions;
 
 create type user_role as enum ('admin', 'manager', 'landlord', 'tenant');
 create type property_status as enum ('active', 'inactive', 'maintenance');
