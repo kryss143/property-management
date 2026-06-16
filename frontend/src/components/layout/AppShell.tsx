@@ -202,7 +202,7 @@ export function AppShell() {
               </NavLink>
               <button
                 className="focus-ring grid h-10 w-10 place-items-center rounded-lg border border-gray-200 bg-white shadow-sm"
-                onClick={() => void signOut()}
+                onClick={(): Promise<void> => signOut()}
                 title="Sign out"
               >
                 <LogOut size={18} />
