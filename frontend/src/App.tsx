@@ -74,26 +74,38 @@ export default function App() {
         {/* /dashboard redirects to the role-specific page */}
         <Route path="/dashboard" element={<DashboardRedirect />} />
 
-        <Route path="/dashboard/admin" element={
-          <RequireRole roles={["admin"]}>
-            <AdminDashboard />
-          </RequireRole>
-        } />
-        <Route path="/dashboard/manager" element={
-          <RequireRole roles={["manager"]}>
-            <ManagerDashboard />
-          </RequireRole>
-        } />
-        <Route path="/dashboard/tenant" element={
-          <RequireRole roles={["tenant"]}>
-            <TenantDashboard />
-          </RequireRole>
-        } />
-        <Route path="/dashboard/owner" element={
-          <RequireRole roles={["landlord"]}>
-            <OwnerDashboard />
-          </RequireRole>
-        } />
+        <Route
+          path="/dashboard/admin"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dashboard/manager"
+          element={
+            <RequireRole roles={["manager"]}>
+              <ManagerDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dashboard/tenant"
+          element={
+            <RequireRole roles={["tenant"]}>
+              <TenantDashboard />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/dashboard/owner"
+          element={
+            <RequireRole roles={["landlord"]}>
+              <OwnerDashboard />
+            </RequireRole>
+          }
+        />
 
         <Route
           path="/properties"

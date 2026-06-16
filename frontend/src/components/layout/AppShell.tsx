@@ -251,8 +251,6 @@ export function AppShell() {
   );
 }
 
-// ─── NavItem ──────────────────────────────────────────────────────────────────
-
 function NavItem({ label, path, icon: Icon }: (typeof staticNavItems)[number]) {
   return (
     <NavLink
