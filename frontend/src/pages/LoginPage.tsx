@@ -376,7 +376,7 @@ export function LoginPage() {
               {mode === "login" ? "Login" : "Create account"}
             </button>
           </form>
-          // 3. Render below the form closing tag
+
           {signupSuccess && (
             <div className="mt-4 flex gap-2.5 rounded-lg bg-emerald-50 px-3 py-3 text-emerald-800">
               <MailCheck className="mt-0.5 shrink-0" size={16} />
