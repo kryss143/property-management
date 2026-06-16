@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { AlertCircle, Building2, Loader2, MailCheck } from "lucide-react";
 import { z } from "zod";
@@ -132,6 +132,19 @@ export function LoginPage() {
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!serverError) return;
+    const timer = setTimeout(() => setServerError(null), 5000);
+    return () => clearTimeout(timer);
+  }, [serverError]);
+
+  // Auto-clear signup success banner after 5 seconds
+  useEffect(() => {
+    if (!signupSuccess) return;
+    const timer = setTimeout(() => setSignupSuccess(false), 5000);
+    return () => clearTimeout(timer);
+  }, [signupSuccess]);
 
   const showDemoLogin = import.meta.env.DEV;
 
