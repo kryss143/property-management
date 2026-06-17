@@ -270,7 +270,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(null);
         setIsDemo(false);
 
-        navigate("/", { replace: true });
+        navigate("/login", { replace: true });
       },
     }),
     [isDemo, loading, navigate, profile, session],
