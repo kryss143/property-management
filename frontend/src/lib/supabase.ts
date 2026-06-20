@@ -17,5 +17,8 @@ export const isSupabaseConfigured = Boolean(
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
   },
 });

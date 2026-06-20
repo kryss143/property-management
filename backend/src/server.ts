@@ -9,6 +9,20 @@ import { profileRouter } from "./routes/profile.js";
 
 const app = express();
 
+// Disable Express's automatic ETag generation. Without this, GET requests
+// for dynamic, frequently-changing resources (tenants, properties, etc.)
+// can come back as 304 Not Modified against a stale cached body, even
+// when the underlying data has changed.
+app.disable("etag");
+
+// Belt-and-suspenders: explicitly tell the browser (and any proxy/CDN in
+// front of this API) never to cache responses, rather than relying on the
+// ETag setting alone to prevent conditional-GET / 304 staleness.
+app.use((_req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 app.use(cors({ origin: config.frontendOrigin, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));

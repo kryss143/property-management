@@ -18,7 +18,22 @@ type FieldKind =
   | "email"
   | "url"
   | "textarea"
-  | "select";
+  | "select"
+  | "lookup";
+
+interface LookupConfig {
+  /** API route to fetch options from, e.g. "tenants" */
+  route: string;
+  /** Row keys tried in order to build the display label, e.g. ["full_name"] */
+  labelKeys: string[];
+  /** Optional row keys shown as a smaller secondary line, e.g. ["email"] */
+  subtitleKeys?: string[];
+  /**
+   * If set, only show options whose [matchKey] equals the current form
+   * value of [fieldKey] — e.g. units filtered down to the chosen property.
+   */
+  filterBy?: { fieldKey: string; matchKey: string };
+}
 
 interface FieldConfig {
   key: string;
@@ -26,6 +41,7 @@ interface FieldConfig {
   kind: FieldKind;
   required?: boolean;
   options?: string[];
+  lookup?: LookupConfig;
 }
 
 interface ResourceConfig {
@@ -128,14 +144,39 @@ const configs: Record<string, ResourceConfig> = {
     route: "leases",
     columns: ["tenant_id", "start_date", "end_date", "rent_amount", "status"],
     fields: [
-      { key: "tenant_id", label: "Tenant ID", kind: "text", required: true },
+      {
+        key: "tenant_id",
+        label: "Tenant",
+        kind: "lookup",
+        required: true,
+        lookup: {
+          route: "tenants",
+          labelKeys: ["full_name"],
+          subtitleKeys: ["email"],
+        },
+      },
       {
         key: "property_id",
-        label: "Property ID",
-        kind: "text",
+        label: "Property",
+        kind: "lookup",
         required: true,
+        lookup: {
+          route: "properties",
+          labelKeys: ["name"],
+          subtitleKeys: ["address"],
+        },
       },
-      { key: "unit_id", label: "Unit ID", kind: "text", required: true },
+      {
+        key: "unit_id",
+        label: "Unit",
+        kind: "lookup",
+        required: true,
+        lookup: {
+          route: "units",
+          labelKeys: ["unit_number"],
+          filterBy: { fieldKey: "property_id", matchKey: "property_id" },
+        },
+      },
       { key: "start_date", label: "Start date", kind: "date", required: true },
       { key: "end_date", label: "End date", kind: "date", required: true },
       {
@@ -627,8 +668,13 @@ function ResourceForm({
             className={`block text-sm font-medium text-gray-700 ${field.kind === "textarea" ? "sm:col-span-2" : ""}`}
           >
             {field.label}
-            {renderInput(field, form[field.key] ?? "", (value) =>
-              setForm((current) => ({ ...current, [field.key]: value })),
+            {renderInput(
+              field,
+              form[field.key] ?? "",
+              (value) =>
+                setForm((current) => ({ ...current, [field.key]: value })),
+              token,
+              form,
             )}
           </label>
         ))}
@@ -659,13 +705,216 @@ function ResourceForm({
   );
 }
 
+type LookupOption = {
+  id: string;
+  label: string;
+  subtitle?: string;
+};
+
+function buildLookupOption(
+  row: Record<string, unknown>,
+  lookup: LookupConfig,
+): LookupOption {
+  const label =
+    lookup.labelKeys
+      .map((key) => row[key])
+      .find((v) => v !== undefined && v !== null && v !== "") ?? row.id;
+  const subtitle = lookup.subtitleKeys
+    ?.map((key) => row[key])
+    .find((v) => v !== undefined && v !== null && v !== "");
+  return {
+    id: String(row.id),
+    label: String(label),
+    subtitle: subtitle ? String(subtitle) : undefined,
+  };
+}
+
+function LookupInput({
+  className,
+  value,
+  onChange,
+  required,
+  token,
+  lookup,
+  filterValue,
+}: {
+  className: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  token?: string;
+  lookup: LookupConfig;
+  filterValue?: string;
+}) {
+  // Raw rows from the API, keyed by id — the single source of truth.
+  // Storing the full row (not just a derived label) is what lets us
+  // filter units by their property_id without a second fetch.
+  const [rowsById, setRowsById] = useState<
+    Record<string, Record<string, unknown>>
+  >({});
+  const [status, setStatus] = useState<"idle" | "loading" | "loaded" | "error">(
+    "idle",
+  );
+  const [inputText, setInputText] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ── fetch the lookup's option rows once, on first focus ──
+  useEffect(() => {
+    if (!open || status !== "idle") return;
+    setStatus("loading");
+    listResource<Record<string, unknown>>(lookup.route, token)
+      .then((response) => {
+        const map = Object.fromEntries(
+          response.data.map((row) => [String(row.id), row]),
+        );
+        setRowsById(map);
+        setStatus("loaded");
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus("error");
+      });
+  }, [open, status, lookup.route, token]);
+
+  // ── keep the visible text in sync with the committed id's label ──
+  useEffect(() => {
+    if (!value) {
+      setInputText("");
+      return;
+    }
+    const row = rowsById[value];
+    setInputText(row ? buildLookupOption(row, lookup).label : value);
+  }, [value, rowsById, lookup]);
+
+  // ── close the dropdown on outside click ──
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const rows = Object.values(rowsById);
+
+    const scoped = lookup.filterBy
+      ? rows.filter((row) =>
+          filterValue ? row[lookup.filterBy!.matchKey] === filterValue : false,
+        )
+      : rows;
+
+    const q = inputText.trim().toLowerCase();
+    const options = scoped.map((row) => buildLookupOption(row, lookup));
+    if (!q) return options;
+    return options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        opt.subtitle?.toLowerCase().includes(q),
+    );
+  }, [rowsById, inputText, lookup, filterValue]);
+
+  // If the controlling field (e.g. property) changes to a value that no
+  // longer matches the currently selected option, clear the stale choice.
+  useEffect(() => {
+    if (!lookup.filterBy || !value) return;
+    const row = rowsById[value];
+    if (row && filterValue && row[lookup.filterBy.matchKey] !== filterValue) {
+      onChange("");
+    }
+  }, [filterValue, lookup.filterBy, rowsById, value, onChange]);
+
+  const needsFilterFirst = Boolean(lookup.filterBy) && !filterValue;
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        className={className}
+        value={inputText}
+        required={required}
+        disabled={needsFilterFirst}
+        placeholder={
+          needsFilterFirst
+            ? "Select a property first"
+            : status === "loaded"
+              ? "Type to search…"
+              : "Click to load options…"
+        }
+        onFocus={() => setOpen(true)}
+        onChange={(event) => {
+          setInputText(event.target.value);
+          setOpen(true);
+          // clear the committed id while the user types a new search term,
+          // so a stale id is never silently submitted
+          if (value) onChange("");
+        }}
+      />
+      {open && !needsFilterFirst && (
+        <div className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+          {status === "loading" ? (
+            <p className="px-3 py-2 text-sm text-gray-500">Loading…</p>
+          ) : status === "error" ? (
+            <p className="px-3 py-2 text-sm text-rose-600">
+              Couldn't load options
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-gray-500">No matches</p>
+          ) : (
+            filtered.map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                onClick={() => {
+                  onChange(opt.id);
+                  setInputText(opt.label);
+                  setOpen(false);
+                }}
+              >
+                <span className="font-medium">{opt.label}</span>
+                {opt.subtitle ? (
+                  <span className="ml-2 text-xs text-gray-500">
+                    {opt.subtitle}
+                  </span>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function renderInput(
   field: FieldConfig,
   value: string,
   onChange: (value: string) => void,
+  token?: string,
+  form?: Record<string, string>,
 ) {
   const base =
     "focus-ring mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm";
+
+  if (field.kind === "lookup" && field.lookup) {
+    const filterValue = field.lookup.filterBy
+      ? form?.[field.lookup.filterBy.fieldKey]
+      : undefined;
+    return (
+      <LookupInput
+        className={base}
+        value={value}
+        onChange={onChange}
+        required={field.required}
+        token={token}
+        lookup={field.lookup}
+        filterValue={filterValue}
+      />
+    );
+  }
 
   if (field.kind === "textarea") {
     return (

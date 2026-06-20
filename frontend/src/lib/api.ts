@@ -69,10 +69,9 @@ export async function listResource<T>(
     return { data, count: data.length, page: 1, pageSize: 20 };
   }
 
-  return request<ListResponse<T>>(`/${resource}`, token).catch(() => {
-    const data = (demoResources[resource] ?? []) as T[];
-    return { data, count: data.length, page: 1, pageSize: 20 };
-  });
+  // Let real errors propagate — silently falling back to demo data here
+  // would hide genuine API failures behind fake-looking real data.
+  return request<ListResponse<T>>(`/${resource}`, token);
 }
 
 export async function createResource<T>(
