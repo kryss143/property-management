@@ -1,6 +1,10 @@
 import { config as dotenvConfig } from "dotenv";
 import { existsSync } from "fs";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables from a single .env file.
 // NODE_ENV decides which Supabase project / origin pair to use:
