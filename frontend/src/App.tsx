@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import type { UserRole } from "@property-management/shared";
 import { AppShell } from "./components/layout/AppShell";
 import { LoginPage } from "./pages/LoginPage";
@@ -29,7 +29,7 @@ function RequireRole({
   const { profile } = useAuth();
 
   if (!profile || !roles.includes(profile.role)) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -46,7 +46,7 @@ function ProtectedApp() {
     );
   }
 
-  if (!profile) return <Navigate to="/" replace />;
+  if (!profile) return <Navigate to="/login" replace />;
 
   return <AppShell />;
 }
@@ -56,9 +56,7 @@ function DashboardRedirect() {
 
   if (!profile) return <Navigate to="/" replace />;
 
-  const map: Record<string, string> = roleDashboardPath;
-
-  return <Navigate to={map[profile.role] ?? "/"} replace />;
+  return <Navigate to={roleDashboardPath[profile.role]} replace />;
 }
 
 export default function App() {
