@@ -1,13 +1,8 @@
 // HomePage.tsx
-// Matches LoginPage.tsx design tokens:
-//   Brand:      emerald-700 / emerald-600 / emerald-50
-//   Background: #f6f7fb
-//   Cards:      white + shadow-soft
-//   Text:       gray-900 / gray-700 / gray-500
-//   Accent:     emerald-600 for CTAs, gray-900 for secondary
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import type { UserRole } from "@property-management/shared";
 import {
   Building2,
   CheckCircle2,
@@ -23,10 +18,14 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { useAuth } from "../providers/AuthProvider";
 
-// ─── Animated Building Grid ───────────────────────────────────────────────────
-// Signature element: a live 7×5 unit grid that simulates occupancy changes,
-// making the page feel like the product is already running.
+const roleDashboardPath: Record<UserRole, string> = {
+  admin: "/dashboard/admin",
+  manager: "/dashboard/manager",
+  tenant: "/dashboard/tenant",
+  landlord: "/dashboard/owner",
+};
 
 type UnitStatus = "occupied" | "available" | "maintenance" | "selected";
 
@@ -52,7 +51,6 @@ function BuildingGrid() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Every 1.8s, flip one random unit between available and occupied
     intervalRef.current = setInterval(() => {
       setGrid((prev) => {
         const next = prev.map((row) => [...row]) as UnitStatus[][];
@@ -158,8 +156,6 @@ function BuildingGrid() {
   );
 }
 
-// ─── Stat Counter ─────────────────────────────────────────────────────────────
-
 function useCountUp(target: number, duration = 1200, start = false) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -196,8 +192,6 @@ function StatNumber({
     </span>
   );
 }
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
 
 function Nav() {
   const navigate = useNavigate();
@@ -299,8 +293,6 @@ function Nav() {
   );
 }
 
-// ─── Features data ────────────────────────────────────────────────────────────
-
 const features = [
   {
     Icon: Building2,
@@ -340,8 +332,6 @@ const features = [
   },
 ];
 
-// ─── Testimonials ─────────────────────────────────────────────────────────────
-
 const testimonials = [
   {
     quote:
@@ -365,8 +355,6 @@ const testimonials = [
     initials: "AR",
   },
 ];
-
-// ─── Pricing ─────────────────────────────────────────────────────────────────
 
 const plans = [
   {
@@ -417,8 +405,6 @@ const plans = [
   },
 ];
 
-// ─── How it works steps ───────────────────────────────────────────────────────
-
 const steps = [
   {
     label: "Add your properties",
@@ -437,10 +423,9 @@ const steps = [
   },
 ];
 
-// ─── HomePage ─────────────────────────────────────────────────────────────────
-
 export function HomePage() {
   const navigate = useNavigate();
+  const { profile, loading } = useAuth();
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
 
@@ -457,11 +442,23 @@ export function HomePage() {
     return () => obs.disconnect();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f6f7fb] px-4 text-sm text-gray-600">
+        Loading...
+      </div>
+    );
+  }
+
+  if (profile) {
+    return (
+      <Navigate to={roleDashboardPath[profile.role] ?? "/dashboard"} replace />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f6f7fb] text-gray-900">
       <Nav />
-
-      {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 pb-16 pt-14 md:pt-20">
         <div className="grid items-center gap-12 md:grid-cols-[1fr_420px]">
           {/* Left copy */}
@@ -513,7 +510,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── STATS ─────────────────────────────────────────────────────────── */}
       <section ref={statsRef} className="border-y border-gray-100 bg-white">
         <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-gray-100 px-5 md:grid-cols-4">
           {[
@@ -536,7 +532,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── FEATURES ──────────────────────────────────────────────────────── */}
       <section id="features" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-12 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
@@ -569,7 +564,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
       <section id="how-it-works" className="border-y border-gray-100 bg-white">
         <div className="mx-auto max-w-6xl px-5 py-20">
           <div className="mb-12 text-center">
@@ -600,7 +594,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── ROLE BADGES ───────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-20">
         <div className="overflow-hidden rounded-2xl bg-gray-900 p-8 md:p-12">
           <div className="grid gap-8 md:grid-cols-[1fr_auto]">
@@ -661,7 +654,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ──────────────────────────────────────────────────── */}
       <section id="testimonials" className="border-t border-gray-100 bg-white">
         <div className="mx-auto max-w-6xl px-5 py-20">
           <div className="mb-12 text-center">
@@ -705,87 +697,80 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── PRICING ───────────────────────────────────────────────────────── */}
       <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-12 text-center">
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Coming soon
+          </span>
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">
             Pricing
           </p>
           <h2 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">
-            Simple, honest pricing
+            Plans are on the way
           </h2>
           <p className="mx-auto mt-3 max-w-md text-gray-500">
-            Start free. Upgrade when you need more. No hidden fees, no per-unit
-            surprises.
+            We're finalising simple, honest pricing — no hidden fees, no
+            per-unit surprises. Here's what each plan will include.
           </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {plans.map(
-            ({ name, price, period, description, cta, featured, perks }) => (
-              <article
-                key={name}
-                className={[
-                  "relative rounded-xl p-7 transition",
-                  featured
-                    ? "border-2 border-emerald-600 bg-white shadow-[0_8px_40px_rgba(5,150,105,0.12)]"
-                    : "border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)]",
-                ].join(" ")}
+          {plans.map(({ name, description, featured, perks }) => (
+            <article
+              key={name}
+              className={[
+                "relative rounded-xl p-7 transition",
+                featured
+                  ? "border-2 border-emerald-600 bg-white shadow-[0_8px_40px_rgba(5,150,105,0.12)]"
+                  : "border border-gray-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.04)]",
+              ].join(" ")}
+            >
+              {featured && (
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                  Most popular
+                </span>
+              )}
+
+              <p className="text-sm font-semibold text-gray-500">{name}</p>
+              <p className="mt-2 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-gray-400">
+                  Coming soon
+                </span>
+              </p>
+              <p className="mt-1.5 text-sm text-gray-500">{description}</p>
+
+              <button
+                disabled
+                title="Pricing isn't available yet"
+                className="mt-5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-semibold text-gray-400"
               >
-                {featured && (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-600 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
-                    Most popular
-                  </span>
-                )}
+                Coming soon
+              </button>
 
-                <p className="text-sm font-semibold text-gray-500">{name}</p>
-                <p className="mt-2 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {price}
-                  </span>
-                  {period && (
-                    <span className="text-sm text-gray-400">{period}</span>
-                  )}
-                </p>
-                <p className="mt-1.5 text-sm text-gray-500">{description}</p>
-
-                <button
-                  onClick={() => navigate("/login")}
-                  className={[
-                    "mt-5 w-full rounded-lg py-2.5 text-sm font-semibold transition",
-                    featured
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                      : "border border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50",
-                  ].join(" ")}
-                >
-                  {cta}
-                </button>
-
-                <ul className="mt-6 space-y-3">
-                  {perks.map((perk) => (
-                    <li
-                      key={perk}
-                      className="flex items-start gap-2.5 text-sm text-gray-600"
-                    >
-                      <CheckCircle2
-                        size={16}
-                        className={
-                          featured
-                            ? "mt-0.5 shrink-0 text-emerald-600"
-                            : "mt-0.5 shrink-0 text-gray-400"
-                        }
-                      />
-                      {perk}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ),
-          )}
+              <ul className="mt-6 space-y-3">
+                {perks.map((perk) => (
+                  <li
+                    key={perk}
+                    className="flex items-start gap-2.5 text-sm text-gray-600"
+                  >
+                    <CheckCircle2
+                      size={16}
+                      className={
+                        featured
+                          ? "mt-0.5 shrink-0 text-emerald-600"
+                          : "mt-0.5 shrink-0 text-gray-400"
+                      }
+                    />
+                    {perk}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
         </div>
       </section>
 
-      {/* ── CTA BANNER ────────────────────────────────────────────────────── */}
       <section className="border-t border-gray-100 bg-emerald-700">
         <div className="mx-auto max-w-6xl px-5 py-16 text-center">
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
@@ -812,7 +797,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100 bg-white">
         <div className="mx-auto max-w-6xl px-5 py-10">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">

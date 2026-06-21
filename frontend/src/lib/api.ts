@@ -1,7 +1,22 @@
+//api.ts
+
 import type { DashboardPayload } from "@property-management/shared";
 import { demoDashboard, demoResources } from "../data/demo";
 
-const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const isDev = Boolean(import.meta.env.DEV);
+
+// Same fused-.env issue as supabase.ts: VITE_API_URL and VITE_LOCAL_API_URL
+// now live side by side in one file. Without branching on isDev, a local
+// dev server picks up the production Render URL and gets blocked by CORS
+// (the production API's allowed origin is the deployed frontend, not
+// localhost).
+const apiUrl = isDev
+  ? import.meta.env.VITE_LOCAL_API_URL || "http://localhost:4000/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+
+if (isDev) {
+  console.log("[env] API base URL:", apiUrl);
+}
 
 export class AuthError extends Error {
   status: number;

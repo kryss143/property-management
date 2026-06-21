@@ -46,20 +46,19 @@ function ProtectedApp() {
     );
   }
 
-  if (!profile) return <Navigate to="/login" replace />;
+  if (!profile) return <Navigate to="/" replace />;
 
-  // AppShell must render <Outlet /> so nested routes render inside the shell
   return <AppShell />;
 }
 
 function DashboardRedirect() {
   const { profile } = useAuth();
 
-  if (!profile) return <Navigate to="/login" replace />;
+  if (!profile) return <Navigate to="/" replace />;
 
   const map: Record<string, string> = roleDashboardPath;
 
-  return <Navigate to={map[profile.role] ?? "/login"} replace />;
+  return <Navigate to={map[profile.role] ?? "/"} replace />;
 }
 
 export default function App() {

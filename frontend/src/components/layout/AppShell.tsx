@@ -105,8 +105,6 @@ function getNavItems(role: Profile["role"] | undefined) {
   return staticNavItems.filter((item) => item.roles.includes(role));
 }
 
-// ─── AppShell ─────────────────────────────────────────────────────────────────
-
 export function AppShell() {
   const { profile, signOut, isDemo } = useAuth();
   const location = useLocation();

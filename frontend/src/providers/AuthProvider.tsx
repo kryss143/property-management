@@ -3,11 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import type { Profile } from "@property-management/shared";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
-import {
-  withTimeout,
-  profileSetupError,
-  loadProfile,
-} from "../lib/authHelpers";
+import { profileSetupError, loadProfile } from "../lib/authHelpers";
 
 interface AuthContextValue {
   profile: Profile | null;
@@ -49,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  // FIX 1: always start as false — demo mode must be explicitly chosen from the login page
+
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
@@ -77,8 +73,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      // FIX 2: don't auto-login as demo — just stop loading so ProtectedApp
-      // redirects to /login where the user can choose "Use demo" themselves
       setLoading(false);
       return;
     }
@@ -87,15 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     async function bootstrapAuth() {
       try {
-        const { data } = await withTimeout(
-          supabase.auth.getSession(),
-          "Timed out loading Supabase session",
-        );
-
-        // const { data, error } = await supabase.auth.getSession();
-
-        // console.log("session", data);
-        // console.log("session error", error);
+        const { data } = await supabase.auth.getSession();
 
         if (!active) return;
 
@@ -197,6 +183,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             full_name: fullName,
             role,
           });
+
+          if (role === "tenant") {
+            const { error: tenantError } = await supabase
+              .from("tenants")
+              .upsert(
+                {
+                  profile_id: data.user.id,
+                  full_name: fullName,
+                  email,
+                  phone: null,
+                  emergency_contact: null,
+                },
+                { onConflict: "profile_id" },
+              );
+
+            if (tenantError) {
+              console.error(
+                "[auth] Failed to create tenant record",
+                tenantError,
+              );
+            }
+          }
         }
 
         setIsDemo(false);
@@ -222,7 +230,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(null);
         setIsDemo(false);
 
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
       },
     }),
     [isDemo, loading, navigate, profile, session],
