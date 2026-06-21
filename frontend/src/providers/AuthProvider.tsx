@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import type { Profile } from "@property-management/shared";
@@ -45,12 +52,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  // FIX 1: always start as false — demo mode must be explicitly chosen from the login page
+
   const [isDemo, setIsDemo] = useState(false);
+
+  const authGenerationRef = useRef(0);
 
   useEffect(() => {
     function onAuthExpired() {
       console.warn("[auth] Session expired (received auth:expired event)");
+      authGenerationRef.current += 1;
       setSession(null);
       setProfile(null);
       setIsDemo(false);
@@ -73,17 +83,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
-      // FIX 2: don't auto-login as demo — just stop loading so ProtectedApp
-      // redirects to /login where the user can choose "Use demo" themselves
       setLoading(false);
       return;
     }
 
     let active = true;
 
-    const SESSION_TIMEOUT_MS = 8000;
+    const SESSION_TIMEOUT_MS = 6000;
 
     function getSessionWithTimeout() {
+      const requestGeneration = authGenerationRef.current;
+
       return new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
         (resolve) => {
           let settled = false;
@@ -109,17 +119,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             // Timeout already fired and bootstrapAuth moved on with "no
-            // session" — but the real call just came back and the
-            // session was fine all along. Restore it now rather than
-            // leaving the user logged out for a session that was valid.
-            if (!active || !result.data.session) return;
+            // session" — but the real call just came back. Only restore
+            // it if nothing has explicitly signed the user out since this
+            // request started; otherwise we'd silently undo a sign-out.
+            if (
+              !active ||
+              !result.data.session ||
+              authGenerationRef.current !== requestGeneration
+            ) {
+              return;
+            }
 
             console.info(
               "[auth] Slow getSession resolved successfully — restoring session",
             );
             setSession(result.data.session);
             void loadProfile(result.data.session.user.id).then((p) => {
-              if (active) setProfile(p);
+              if (active && authGenerationRef.current === requestGeneration) {
+                setProfile(p);
+              }
             });
           });
         },
@@ -270,6 +288,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       },
       async signOut() {
         navigate("/", { replace: true });
+
+        authGenerationRef.current += 1;
 
         if (isSupabaseConfigured) {
           await supabase.auth.signOut();
