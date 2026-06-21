@@ -81,14 +81,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     let active = true;
 
-    const SESSION_TIMEOUT_MS = 6000;
+    const SESSION_TIMEOUT_MS = 8000;
 
     function getSessionWithTimeout() {
       return new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
         (resolve) => {
+          let settled = false;
+
           const timer = setTimeout(() => {
+            if (settled) return;
+            settled = true;
             console.warn(
-              "[auth] getSession timed out after inactivity — treating as no session",
+              "[auth] getSession slow after inactivity — showing logged-out state, still checking in background",
             );
             resolve({ data: { session: null }, error: null } as Awaited<
               ReturnType<typeof supabase.auth.getSession>
@@ -97,7 +101,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           supabase.auth.getSession().then((result) => {
             clearTimeout(timer);
-            resolve(result);
+
+            if (!settled) {
+              settled = true;
+              resolve(result);
+              return;
+            }
+
+            // Timeout already fired and bootstrapAuth moved on with "no
+            // session" — but the real call just came back and the
+            // session was fine all along. Restore it now rather than
+            // leaving the user logged out for a session that was valid.
+            if (!active || !result.data.session) return;
+
+            console.info(
+              "[auth] Slow getSession resolved successfully — restoring session",
+            );
+            setSession(result.data.session);
+            void loadProfile(result.data.session.user.id).then((p) => {
+              if (active) setProfile(p);
+            });
           });
         },
       );
