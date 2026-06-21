@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-
+  // FIX 1: always start as false — demo mode must be explicitly chosen from the login page
   const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
@@ -73,15 +73,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      // FIX 2: don't auto-login as demo — just stop loading so ProtectedApp
+      // redirects to /login where the user can choose "Use demo" themselves
       setLoading(false);
       return;
     }
 
     let active = true;
 
+    const SESSION_TIMEOUT_MS = 6000;
+
+    function getSessionWithTimeout() {
+      return new Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>>(
+        (resolve) => {
+          const timer = setTimeout(() => {
+            console.warn(
+              "[auth] getSession timed out after inactivity — treating as no session",
+            );
+            resolve({ data: { session: null }, error: null } as Awaited<
+              ReturnType<typeof supabase.auth.getSession>
+            >);
+          }, SESSION_TIMEOUT_MS);
+
+          supabase.auth.getSession().then((result) => {
+            clearTimeout(timer);
+            resolve(result);
+          });
+        },
+      );
+    }
+
     async function bootstrapAuth() {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await getSessionWithTimeout();
 
         if (!active) return;
 
@@ -94,7 +118,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (active) {
           setSession(null);
           setProfile(null);
-          navigate("/login", { replace: true });
         }
       } finally {
         if (active) {
@@ -223,14 +246,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsDemo(true);
       },
       async signOut() {
+        navigate("/", { replace: true });
+
         if (isSupabaseConfigured) {
           await supabase.auth.signOut();
         }
         setSession(null);
         setProfile(null);
         setIsDemo(false);
-
-        navigate("/", { replace: true });
       },
     }),
     [isDemo, loading, navigate, profile, session],
