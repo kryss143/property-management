@@ -46,7 +46,7 @@ function ProtectedApp() {
     );
   }
 
-  if (!profile) return <Navigate to="/login" replace />;
+  if (!profile) return <Navigate to="/" replace />;
 
   return <AppShell />;
 }
