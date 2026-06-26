@@ -109,26 +109,42 @@ create table maintenance_images (
   created_at timestamptz not null default now()
 );
 
-
 -- ============================================================
--- INDEXES (unchanged)
+-- INDEXES
+--
+-- Added FK-covering indexes that were missing on columns used
+-- heavily by the helper functions / RLS predicates below.
+-- Without these, owns_property() / owns_tenant_record() and the
+-- "select own row" filters degrade to seq scans as tables grow.
 -- ============================================================
 
-create index idx_units_property_id       on units(property_id);
-create index idx_tenants_property_id     on tenants(property_id);
-create index idx_leases_tenant_id        on leases(tenant_id);
-create index idx_payments_due_date       on payments(due_date);
-create index idx_maintenance_status      on maintenance_requests(status);
-
+create index idx_units_property_id           on units(property_id);
+create index idx_tenants_property_id         on tenants(property_id);
+create index idx_tenants_profile_id          on tenants(profile_id);          -- new: owns_tenant_record() lookup
+create index idx_leases_tenant_id            on leases(tenant_id);
+create index idx_leases_property_id          on leases(property_id);          -- new: owns_property() lookup
+create index idx_payments_due_date           on payments(due_date);
+create index idx_payments_tenant_id          on payments(tenant_id);          -- new: tenant "own payments" lookup
+create index idx_payments_property_id        on payments(property_id);       -- new: owns_property() lookup
+create index idx_maintenance_status          on maintenance_requests(status);
+create index idx_maintenance_property_id     on maintenance_requests(property_id); -- new
+create index idx_maintenance_tenant_id       on maintenance_requests(tenant_id);   -- new
+create index idx_maintenance_images_request  on maintenance_images(request_id);    -- new
+create index idx_properties_owner_id         on properties(owner_id);              -- new: owns_property() lookup
 
 -- ============================================================
 -- HELPER FUNCTIONS
 -- All are STABLE + SECURITY DEFINER so Postgres can cache the
 -- result within a query and bypass per-row auth.uid() re-evaluation.
+--
+-- Execute privileges are revoked from PUBLIC and re-granted only
+-- to `authenticated`/`anon` as appropriate, since SECURITY DEFINER
+-- functions are otherwise callable by any role with USAGE on the
+-- schema. These only ever return booleans/enums (no row data), so
+-- the exposure is low, but being explicit avoids relying on default
+-- Postgres grants behaving correctly forever.
 -- ============================================================
 
--- Returns the role of the currently authenticated user.
--- Used by all role-gated policies below.
 create or replace function public.current_user_role()
 returns user_role
 language sql stable security definer
@@ -137,8 +153,6 @@ as $$
   select role from public.profiles where id = (select auth.uid())
 $$;
 
--- Returns true when the caller is admin or manager.
--- Admins have full system access; managers operate across all properties.
 create or replace function public.is_admin_or_manager()
 returns boolean
 language sql stable security definer
@@ -147,8 +161,6 @@ as $$
   select coalesce(public.current_user_role() in ('admin', 'manager'), false)
 $$;
 
--- Returns true when the caller owns the given property (landlord check).
--- Landlords may only act on properties where owner_id = their user id.
 create or replace function public.owns_property(property_uuid uuid)
 returns boolean
 language sql stable security definer
@@ -161,8 +173,6 @@ as $$
   )
 $$;
 
--- Returns true when the caller's profile is linked to the tenant record.
--- Tenants may only act on their own tenant row (profile_id = auth.uid()).
 create or replace function public.owns_tenant_record(tenant_uuid uuid)
 returns boolean
 language sql stable security definer
@@ -174,6 +184,16 @@ as $$
       and profile_id = (select auth.uid())
   )
 $$;
+
+revoke execute on function public.current_user_role()      from public;
+revoke execute on function public.is_admin_or_manager()     from public;
+revoke execute on function public.owns_property(uuid)       from public;
+revoke execute on function public.owns_tenant_record(uuid)  from public;
+
+grant execute on function public.current_user_role()      to authenticated;
+grant execute on function public.is_admin_or_manager()     to authenticated;
+grant execute on function public.owns_property(uuid)       to authenticated;
+grant execute on function public.owns_tenant_record(uuid)  to authenticated;
 
 
 -- ============================================================
@@ -226,7 +246,7 @@ alter table maintenance_images   enable row level security;
 
 
 -- ============================================================
--- PROFILES
+-- PROFILES (unchanged from original — already correct)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
@@ -234,28 +254,16 @@ alter table maintenance_images   enable row level security;
 -- manager     ALL      ALL      ALL      —
 -- landlord    own      own      own      —
 -- tenant      own      own      own      —
---
--- WHY:
---   Admins need unrestricted access to manage any profile in the system.
---   Managers need to read/create/edit profiles to onboard landlords and
---   tenants on behalf of the organization, but cannot delete accounts
---   (destructive actions are admin-only to prevent accidents).
---   Landlords and tenants can only view and edit their own profile;
---   they have no business reason to read other users' details.
 -- ============================================================
 
--- SELECT: own profile OR admin/manager
--- Consolidated from 3 original policies → 1 to eliminate multiple_permissive_policies
 create policy "profiles: select"
   on profiles for select
   to authenticated
   using (
-    (select auth.uid()) = id            -- own row
-    or public.is_admin_or_manager()     -- admin / manager sees all
+    (select auth.uid()) = id
+    or public.is_admin_or_manager()
   );
 
--- INSERT: own profile OR admin/manager
--- Allows sign-up upsert AND admin/manager-initiated profile creation
 create policy "profiles: insert"
   on profiles for insert
   to authenticated
@@ -264,8 +272,6 @@ create policy "profiles: insert"
     or public.is_admin_or_manager()
   );
 
--- UPDATE: own profile OR admin/manager
--- Users can edit their own details; admins/managers can correct any profile
 create policy "profiles: update"
   on profiles for update
   to authenticated
@@ -278,9 +284,6 @@ create policy "profiles: update"
     or public.is_admin_or_manager()
   );
 
--- DELETE: admin only
--- Only admins may delete profiles; this is intentionally restrictive
--- because deleting a profile cascades to auth.users and is irreversible.
 create policy "profiles: delete"
   on profiles for delete
   to authenticated
@@ -290,7 +293,7 @@ create policy "profiles: delete"
 
 
 -- ============================================================
--- PROPERTIES
+-- PROPERTIES (unchanged from original — already correct)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
@@ -299,23 +302,20 @@ create policy "profiles: delete"
 -- landlord    ALL      own      own      own
 -- tenant      ALL      —        —        —
 --
--- WHY:
---   All authenticated users can browse properties — tenants need to
---   see property details tied to their lease; landlords compare listings.
---   Only admins and managers can create/edit/remove any property.
---   Landlords can manage properties they own (owner_id = their id);
---   they cannot touch other landlords' properties.
---   Tenants are read-only; they have no reason to create or modify properties.
+-- WHY ALL ROLES GET READ ACCESS:
+--   Browsing every property (not just ones you're tied to) is a
+--   deliberate product choice here — e.g. a tenant comparing units
+--   before a transfer, or a landlord scouting comparable listings.
+--   Nothing sensitive lives on this table (no financials), so the
+--   blast radius of "everyone can read" is low. Contrast with
+--   `tenants` below, which holds PII and is NOT given this treatment.
 -- ============================================================
 
--- SELECT: all authenticated users
--- Public-within-app visibility: every role needs to read property details
 create policy "properties: select"
   on properties for select
   to authenticated
   using (true);
 
--- INSERT: admin/manager OR landlord inserting as themselves
 create policy "properties: insert"
   on properties for insert
   to authenticated
@@ -327,7 +327,6 @@ create policy "properties: insert"
     )
   );
 
--- UPDATE: admin/manager OR landlord who owns the property
 create policy "properties: update"
   on properties for update
   to authenticated
@@ -346,7 +345,6 @@ create policy "properties: update"
     )
   );
 
--- DELETE: admin/manager OR landlord who owns the property
 create policy "properties: delete"
   on properties for delete
   to authenticated
@@ -360,20 +358,11 @@ create policy "properties: delete"
 
 
 -- ============================================================
--- UNITS
+-- UNITS (unchanged from original — already correct)
 --
--- Role        SELECT   INSERT   UPDATE   DELETE
--- ─────────── ──────── ──────── ──────── ──────
--- admin       ALL      ALL      ALL      ALL
--- manager     ALL      ALL      ALL      ALL
--- landlord    ALL      own      own      own
--- tenant      ALL      —        —        —
---
--- WHY:
---   Units are physical subdivisions of properties, so the same
---   ownership logic applies: admins/managers manage all; landlords
---   manage only units inside their own properties; tenants are
---   read-only (they need to see their unit details in the app).
+-- Same reasoning as `properties`: unit specs (bedroom count,
+-- rent_amount) are listing-level info, not account-level PII,
+-- so open SELECT is an intentional product choice, not an oversight.
 -- ============================================================
 
 create policy "units: select"
@@ -381,7 +370,6 @@ create policy "units: select"
   to authenticated
   using (true);
 
--- INSERT/UPDATE/DELETE: admin/manager OR landlord who owns the parent property
 create policy "units: insert"
   on units for insert
   to authenticated
@@ -412,28 +400,33 @@ create policy "units: delete"
 
 
 -- ============================================================
--- TENANTS
+-- TENANTS  ***FIXED***
 --
--- Role        SELECT   INSERT   UPDATE   DELETE
--- ─────────── ──────── ──────── ──────── ──────
--- admin       ALL      ALL      ALL      ALL
--- manager     ALL      ALL      ALL      ALL
--- landlord    ALL      own      own      own
--- tenant      ALL      —        —        —
+-- Role        SELECT     INSERT   UPDATE   DELETE
+-- ─────────── ────────── ──────── ──────── ──────
+-- admin       ALL        ALL      ALL      ALL
+-- manager     ALL        ALL      ALL      ALL
+-- landlord    own props  own      own      own
+-- tenant      OWN ROW    —        —        —
 --
--- WHY:
---   Tenant records are operational data shared across roles:
---   admins/managers manage the full roster; landlords manage
---   tenants within their properties; tenants themselves are
---   read-only here (their personal profile is in `profiles`).
---   The "own property" guard prevents landlords from
---   inserting/editing tenants into properties they don't own.
+-- BUG FIXED:
+--   The original "tenants: select" policy used `using (true)`,
+--   meaning ANY authenticated tenant could read EVERY tenant row
+--   system-wide — full name, email, phone, AND emergency_contact
+--   for every other renter in the platform. That contradicts the
+--   stated design intent ("tenants are read-only here") and is a
+--   serious PII leak. Tenants should only ever see their own row;
+--   landlords are scoped to tenants within properties they own.
 -- ============================================================
 
 create policy "tenants: select"
   on tenants for select
   to authenticated
-  using (true);
+  using (
+    public.is_admin_or_manager()
+    or public.owns_property(property_id)            -- landlord: tenants in own properties
+    or profile_id = (select auth.uid())              -- tenant: own row only
+  );
 
 create policy "tenants: insert"
   on tenants for insert
@@ -465,36 +458,23 @@ create policy "tenants: delete"
 
 
 -- ============================================================
--- LEASES
+-- LEASES (logic unchanged — verified correct, comments tightened)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
 -- admin       ALL      ALL      ALL      ALL
 -- manager     ALL      ALL      ALL      ALL
--- landlord    ALL      own      own      own
+-- landlord    own      own      own      own
 -- tenant      own      —        —        —
---
--- WHY:
---   Leases are financially sensitive. All privileged roles can
---   see all leases (needed for dashboard reporting). Tenants
---   may only read their own lease — they should not see other
---   tenants' rent amounts or deposit terms.
---   Write access follows property ownership: only the property's
---   owner or an admin/manager can create or modify lease terms.
 -- ============================================================
 
--- SELECT: admin/manager/landlord see all; tenant sees only their own
 create policy "leases: select"
   on leases for select
   to authenticated
   using (
     public.is_admin_or_manager()
-    or public.owns_property(property_id)    -- landlord for own properties
-    or exists (                             -- tenant sees their own lease
-      select 1 from public.tenants t
-      where t.id = tenant_id
-        and t.profile_id = (select auth.uid())
-    )
+    or public.owns_property(property_id)
+    or public.owns_tenant_record(tenant_id)   -- tenant: own lease only (was an inline EXISTS — swapped for the helper to match the rest of the schema)
   );
 
 create policy "leases: insert"
@@ -527,7 +507,7 @@ create policy "leases: delete"
 
 
 -- ============================================================
--- PAYMENTS
+-- PAYMENTS (logic unchanged — verified correct, comments tightened)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
@@ -535,32 +515,17 @@ create policy "leases: delete"
 -- manager     ALL      ALL      ALL      ALL
 -- landlord    own      own      own      own
 -- tenant      own      —        —        —
---
--- WHY:
---   Payment records contain rent amounts and due dates — private
---   financial data. Tenants may only see their own payment history,
---   never another tenant's. Landlords see and manage payments only
---   for their own properties. Admins/managers have full access for
---   reconciliation and reporting. No role (including tenants) can
---   self-insert a payment — payments are created by the system or
---   by admins/managers/landlords to prevent fraud.
 -- ============================================================
 
--- SELECT: privileged roles see their scope; tenant sees own payments only
 create policy "payments: select"
   on payments for select
   to authenticated
   using (
     public.is_admin_or_manager()
     or public.owns_property(property_id)
-    or exists (
-      select 1 from public.tenants t
-      where t.id = tenant_id
-        and t.profile_id = (select auth.uid())
-    )
+    or public.owns_tenant_record(tenant_id)   -- tenant: own payments only
   );
 
--- INSERT/UPDATE/DELETE: admin/manager or the property's landlord only
 create policy "payments: insert"
   on payments for insert
   to authenticated
@@ -591,7 +556,7 @@ create policy "payments: delete"
 
 
 -- ============================================================
--- MAINTENANCE REQUESTS
+-- MAINTENANCE REQUESTS (logic unchanged — verified correct)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
@@ -599,27 +564,17 @@ create policy "payments: delete"
 -- manager     ALL      ALL      ALL      ALL
 -- landlord    own      own      own      own
 -- tenant      own      own      own      —
---
--- WHY:
---   Maintenance requests originate from tenants reporting issues.
---   Tenants may create and update (e.g. add detail, cancel) their
---   own requests but cannot delete them — deletion would erase the
---   audit trail that landlords and managers rely on.
---   Landlords see and manage requests only for their properties.
---   Tenants only see their own requests (privacy between tenants).
 -- ============================================================
 
--- SELECT: privileged see their scope; tenant sees own requests only
 create policy "maintenance_requests: select"
   on maintenance_requests for select
   to authenticated
   using (
     public.is_admin_or_manager()
     or public.owns_property(property_id)
-    or public.owns_tenant_record(tenant_id)   -- tenant: own requests only
+    or public.owns_tenant_record(tenant_id)
   );
 
--- INSERT: admin/manager, landlord for own property, OR tenant for themselves
 create policy "maintenance_requests: insert"
   on maintenance_requests for insert
   to authenticated
@@ -632,7 +587,6 @@ create policy "maintenance_requests: insert"
     )
   );
 
--- UPDATE: same as insert — tenants can add detail or update status to cancelled
 create policy "maintenance_requests: update"
   on maintenance_requests for update
   to authenticated
@@ -653,7 +607,6 @@ create policy "maintenance_requests: update"
     )
   );
 
--- DELETE: admin/manager and landlord only — preserves audit trail for tenants
 create policy "maintenance_requests: delete"
   on maintenance_requests for delete
   to authenticated
@@ -664,7 +617,7 @@ create policy "maintenance_requests: delete"
 
 
 -- ============================================================
--- MAINTENANCE IMAGES
+-- MAINTENANCE IMAGES (logic unchanged — verified correct)
 --
 -- Role        SELECT   INSERT   UPDATE   DELETE
 -- ─────────── ──────── ──────── ──────── ──────
@@ -672,16 +625,8 @@ create policy "maintenance_requests: delete"
 -- manager     ALL      ALL      ALL      ALL
 -- landlord    own      own      own      own
 -- tenant      own      own      —        own
---
--- WHY:
---   Images are attached evidence for maintenance requests.
---   Tenants should be able to upload and delete their own images
---   (e.g. correct a wrong photo) but not update the URL directly
---   (UPDATE on image_url could be used to swap in another tenant's
---   evidence). Landlords manage images for their properties only.
 -- ============================================================
 
--- SELECT: privileged see their scope; tenant sees images on own requests
 create policy "maintenance_images: select"
   on maintenance_images for select
   to authenticated
@@ -697,7 +642,6 @@ create policy "maintenance_images: select"
     )
   );
 
--- INSERT: admin/manager, landlord for own property, OR tenant for own request
 create policy "maintenance_images: insert"
   on maintenance_images for insert
   to authenticated
@@ -713,7 +657,6 @@ create policy "maintenance_images: insert"
     )
   );
 
--- UPDATE: admin/manager and landlord only — tenants cannot swap image URLs
 create policy "maintenance_images: update"
   on maintenance_images for update
   to authenticated
@@ -734,7 +677,6 @@ create policy "maintenance_images: update"
     )
   );
 
--- DELETE: admin/manager, landlord, OR tenant (remove own wrongly-uploaded image)
 create policy "maintenance_images: delete"
   on maintenance_images for delete
   to authenticated
@@ -769,20 +711,28 @@ on conflict (id) do update set
 -- STORAGE POLICIES
 --
 -- property-images:    public read; admin/manager/landlord write
--- maintenance-images: public read; any authenticated user uploads
---                     (scoped by maintenance_images table RLS);
+-- maintenance-images: public read; upload SCOPED to a request the
+--                     uploader is actually linked to (see fix below);
 --                     owner-scoped update/delete
 -- lease-documents:    private; admin/manager/landlord only
 --
--- WHY:
---   Storage policies are the last line of defence for file access.
---   property-images is a public bucket so image URLs embedded in
---   the UI load without tokens — but writes are role-gated.
---   maintenance-images upload is open to any authenticated user
---   because the table-level RLS on maintenance_images already
---   enforces that uploaded images are linked to valid requests
---   the user owns. lease-documents are private and sensitive
---   (contain financial terms), so tenants are intentionally excluded.
+-- BUG FIXED — maintenance-images insert:
+--   The original policy only checked `auth.uid() is not null`,
+--   i.e. ANY authenticated user could upload ANY file to this
+--   public bucket with no link to a real maintenance request.
+--   The comment claimed table-level RLS on `maintenance_images`
+--   would cover this, but that's false: storage.objects and the
+--   maintenance_images table are independent — uploading a file
+--   to storage does NOT require ever inserting a maintenance_images
+--   row, so the table RLS never gets a chance to run.
+--
+--   FIX: require uploads to use the path convention
+--     {request_id}/{filename}
+--   and check, via storage.foldername(name), that the caller is
+--   admin/manager, owns the request's property, or owns the
+--   request's tenant record — mirroring the table-level INSERT
+--   policy on maintenance_images itself. The request_id segment
+--   must reference a real, accessible maintenance_requests row.
 -- ============================================================
 
 -- property-images
@@ -811,6 +761,7 @@ create policy "storage: property-images delete"
   using (bucket_id = 'property-images' and public.current_user_role() in ('admin', 'manager', 'landlord'));
 
 -- maintenance-images
+-- Upload path convention required: {request_id}/{filename}
 create policy "storage: maintenance-images select"
   on storage.objects for select
   to authenticated
@@ -819,7 +770,20 @@ create policy "storage: maintenance-images select"
 create policy "storage: maintenance-images insert"
   on storage.objects for insert
   to authenticated
-  with check (bucket_id = 'maintenance-images' and (select auth.uid()) is not null);
+  with check (
+    bucket_id = 'maintenance-images'
+    and (
+      public.is_admin_or_manager()
+      or exists (
+        select 1 from public.maintenance_requests mr
+        where mr.id::text = (storage.foldername(name))[1]   -- first path segment = request_id
+          and (
+            public.owns_property(mr.property_id)
+            or public.owns_tenant_record(mr.tenant_id)
+          )
+      )
+    )
+  );
 
 create policy "storage: maintenance-images update"
   on storage.objects for update
